@@ -1,4 +1,3 @@
-# Neptune - TODO: Template integration
+# Neptune - fast.ai integration
 
-TODO: Update docs link
-See [the official docs](https://docs.neptune.ai/integrations-and-supported-tools/model-training/).
+See [the official docs](https://docs.neptune.ai/integrations-and-supported-tools/model-training/fastai).

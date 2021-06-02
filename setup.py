@@ -2,7 +2,7 @@ import os
 
 from setuptools import setup
 
-from neptune_integration_template._version import get_versions  # TODO: update path
+from neptune_fastai._version import get_versions
 
 
 def main():
@@ -16,7 +16,7 @@ def main():
         all_deps += extras[group_name]
     extras['all'] = all_deps
 
-    base_libs = ['neptune-client>=0.9.8']  # TODO: update requirements
+    base_libs = ['neptune-client>=0.9.8', 'fastai']
 
     version = None
     if os.path.exists('PKG-INFO'):
@@ -29,25 +29,25 @@ def main():
         version = get_versions()["version"]
 
     setup(
-        name='neptune-integration-template',  # TODO: update package name to `neptune-*`
+        name='neptune-fastai',
         version=version,
-        description='Neptune.ai integration template integration library',  # TODO: update integration name
+        description='Neptune.ai fast.ai integration library',
         author='neptune.ai',
         support='contact@neptune.ai',
         author_email='contact@neptune.ai',
         # package url management: https://stackoverflow.com/a/56243786/1565454
         url="https://neptune.ai/",
         project_urls={
-            'Tracker': 'https://github.com/neptune-ai/neptune-integration-template/issues',  # TODO: update
-            'Source': 'https://github.com/neptune-ai/neptune-integration-template',  # TODO: update
-            'Documentation': 'https://docs.neptune.ai/integrations-and-supported-tools/model-training/',  # TODO: update
+            'Tracker': 'https://github.com/neptune-ai/neptune-fastai/issues',
+            'Source': 'https://github.com/neptune-ai/neptune-fastai',
+            'Documentation': 'https://docs.neptune.ai/integrations-and-supported-tools/model-training/fastai',
         },
         long_description=readme,
         long_description_content_type="text/markdown",
         license='Apache License 2.0',
         install_requires=base_libs,
         extras_require=extras,
-        packages=['neptune_integration_template', 'neptune_integration_template.impl'],  # TODO: Update package name
+        packages=['neptune_fastai', 'neptune_fastai.impl'],
         zip_safe=False,
         classifiers=[
             # As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
