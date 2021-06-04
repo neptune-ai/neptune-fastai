@@ -91,7 +91,13 @@ class NeptuneCallback(Callback):
 
     @property
     def _optimizer_hyperparams(self):
-        return dict((f'group_layer_{n}', i) for n, i in enumerate(self.learn.opt.hypers))
+        if len(self.learn.opt.hypers) == 1:
+            return self.learn.opt.hypers[0]
+
+        # Group by layers
+        return {
+            f'group_layer_{layer}/': value for layer, opts in enumerate(self.learn.opt.hypers) for hyper, value in opts
+        }
 
     @property
     def name(self) -> str:
@@ -123,7 +129,7 @@ class NeptuneCallback(Callback):
                 'trainable_params': self._trainable_model_parameters,
                 'non_trainable_params': self._total_model_parameters - self._trainable_model_parameters
             },
-            'optimizer_hyperparams': self._optimizer_hyperparams,
+            'initial_optimizer_hyperparameters': self._optimizer_hyperparams,
         }
 
         _log_model_architecture(self.neptune_run, self.learn)
@@ -148,6 +154,9 @@ class NeptuneCallback(Callback):
             if metric_name not in {'epoch', 'time'}:
                 self.neptune_run[f'logs/training/epoch/{metric_name}'].log(value=metric_value, step=self.epoch)
         self.neptune_run['logs/training/epoch/duration'].log(value=time.time() - self.learn.recorder.start_epoch)
+
+        for param, value in self._optimizer_hyperparams.items():
+            self.neptune_run[f'logs/training/epoch/optimizer_hyperparameters/{param}'].log(value)
 
         if self.n_epoch > 1 and self.save_model_freq > 0 and self.save_best_model:
             if self.epoch % self.save_model_freq == 0:
