@@ -24,9 +24,10 @@ import hashlib
 from typing import List
 
 from fastai.learner import Learner
-from fastai.basics import Callback, store_attr
-from fastai.callback.tracker import SaveModelCallback
 from fastai.callback.hook import total_params
+from fastai.basics import Callback, store_attr
+from fastai.callback.core import FetchPredsCallback
+from fastai.callback.tracker import SaveModelCallback
 from fastai.torch_core import trainable_params, default_device
 
 try:
@@ -93,11 +94,12 @@ class NeptuneCallback(Callback):
     @property
     def _optimizer_hyperparams(self):
         if len(self.learn.opt.hypers) == 1:
-            return self.learn.opt.hypers[0]
+            return dict(self.learn.opt.hypers[0])
 
-        # Group by layers
         return {
-            f'group_layer_{layer}/': value for layer, opts in enumerate(self.learn.opt.hypers) for hyper, value in opts
+            f'group_layer_{layer}/{hyper}': value
+            for layer, opts in enumerate(self.learn.opt.hypers)
+            for hyper, value in opts.items()
         }
 
     @property
