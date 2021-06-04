@@ -23,6 +23,7 @@ import time
 import hashlib
 from typing import List
 
+from fastai.learner import Learner
 from fastai.basics import Callback, store_attr
 from fastai.callback.tracker import SaveModelCallback
 from fastai.callback.hook import total_params
@@ -153,24 +154,27 @@ class NeptuneCallback(Callback):
         for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
             if metric_name not in {'epoch', 'time'}:
                 self.neptune_run[f'logs/training/epoch/{metric_name}'].log(value=metric_value, step=self.epoch)
-        self.neptune_run['logs/training/epoch/duration'].log(value=time.time() - self.learn.recorder.start_epoch)
+        self.neptune_run['logs/training/epoch/duration'].log(
+            value=time.time() - self.learn.recorder.start_epoch,
+            step=self.epoch
+        )
 
         for param, value in self._optimizer_hyperparams.items():
-            self.neptune_run[f'logs/training/epoch/optimizer_hyperparameters/{param}'].log(value)
+            self.neptune_run[f'logs/training/epoch/optimizer_hyperparameters/{param}'].log(value, step=self.epoch)
 
         if self.n_epoch > 1 and self.save_model_freq > 0 and self.save_best_model:
             if self.epoch % self.save_model_freq == 0:
                 self.learn.save(f'{self.learn.save_model.fname}')
 
 
-def _log_model_architecture(run: neptune.Run, learn):
+def _log_model_architecture(run: neptune.Run, learn: Learner):
     if hasattr(learn, 'arch'):
         run['config/arch'] = getattr(learn.arch, '__name__', '')
 
-    run['config/model_architecture'].upload(File.from_content(str(learn.model)))
+    run['config/model_architecture'].upload(File.from_content(repr(learn.model)))
 
 
-def _log_dataset_metadata(run: neptune.Run, learn):
+def _log_dataset_metadata(run: neptune.Run, learn: Learner):
     sha = hashlib.sha1(str(learn.dls.path).encode())
 
     run['io_files/resources/dataset'] = {
@@ -180,7 +184,7 @@ def _log_dataset_metadata(run: neptune.Run, learn):
     }
 
 
-def _log_model(save, run: neptune.Run, learn):
+def _log_model(save, run: neptune.Run, learn: Learner):
     def _save_model_logger(*args, **kwargs):
         path = save(*args, **kwargs)
 
