@@ -18,6 +18,7 @@ __all__ = [
     'NeptuneCallback'
 ]
 
+import tempfile
 import time
 import hashlib
 from typing import List
@@ -31,24 +32,16 @@ try:
     # neptune-client=0.9.0 package structure
     import neptune.new as neptune
     from neptune.new.internal.utils import verify_type
+    from neptune.new.types import File
 except ImportError:
     # neptune-client=1.0.0 package structure
     import neptune
     from neptune.internal.utils import verify_type
+    from neptune.types import File
 
 from neptune_fastai import __version__
 
 INTEGRATION_VERSION_KEY = 'source_code/integrations/neptune-fastai'
-
-
-def _log_model(_save, run: neptune.Run, save_model_callback: SaveModelCallback):
-    def _save_model_logger(*args, **kwargs):
-        _save(*args, **kwargs)
-
-        best_model_path = getattr(save_model_callback, 'last_saved_path')
-        if best_model_path is not None and best_model_path.exists():
-            run['io_files/artifacts/model'].upload(str(best_model_path))
-    return _save_model_logger
 
 
 class NeptuneCallback(Callback):
@@ -63,7 +56,7 @@ class NeptuneCallback(Callback):
         verify_type('run', run, neptune.Run)
         verify_type('base_namespace', base_namespace, str)
         verify_type('save_best_model', save_best_model, bool)
-        verify_type('save_model_freq', save_best_model, int)
+        verify_type('save_model_freq', save_model_freq, int)
 
         self.neptune_run = run
 
@@ -78,12 +71,6 @@ class NeptuneCallback(Callback):
     @property
     def _optimizer_name(self) -> str:
         return self.opt_func.__name__
-
-    @property
-    def _architecture_name(self) -> str:
-        if hasattr(self, 'arch'):
-            return getattr(self.arch, __name__, '')
-        return ''
 
     @property
     def _device(self):
@@ -115,10 +102,10 @@ class NeptuneCallback(Callback):
             if not hasattr(self, 'save_model'):
                 self.learn.add_cb(SaveModelCallback())
 
-            self.learn.save_model._save = _log_model(
-                self.learn.save_model._save,
+            self.learn.save = _log_model(
+                self.learn.save,
                 self.neptune_run,
-                self.learn.save_model
+                self.learn
             )
 
     def before_fit(self):
@@ -131,13 +118,12 @@ class NeptuneCallback(Callback):
                 'total': len(self._vocab)
             },
             'device': self._device,
-            'arch': self._architecture_name,
             'model_params': {
                 'total': self._total_model_parameters,
                 'trainable_params': self._trainable_model_parameters,
                 'non_trainable_params': self._total_model_parameters - self._trainable_model_parameters
             },
-            'optimizer_hypers': self._optimizer_hyperparams,
+            'optimizer_hyperparams': self._optimizer_hyperparams,
         }
 
         _log_model_architecture(self.neptune_run, self.learn)
@@ -161,18 +147,18 @@ class NeptuneCallback(Callback):
         for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
             if metric_name not in {'epoch', 'time'}:
                 self.neptune_run[f'logs/training/epoch/{metric_name}'].log(value=metric_value, step=self.epoch)
-        self.neptune_run['logs/training/epoch/time'].log(value=time.time() - self.learn.recorder.start_epoch)
+        self.neptune_run['logs/training/epoch/duration'].log(value=time.time() - self.learn.recorder.start_epoch)
 
         if self.n_epoch > 1 and self.save_model_freq > 0 and self.save_best_model:
             if self.epoch % self.save_model_freq == 0:
-                self.learn.save_model._save(f'{self.learn.save_model.fname}')
+                self.learn.save(f'{self.learn.save_model.fname}')
 
 
-def _log_model_architecture(run: neptune.Run, learn, name: str = 'model_arch.txt'):
-    with open(name, 'w') as file:
-        file.write(str(learn.model))
+def _log_model_architecture(run: neptune.Run, learn):
+    if hasattr(learn, 'arch'):
+        run['config/arch'] = getattr(learn.arch, '__name__', '')
 
-    run['io_files/artifacts/model_arch'].upload(name)
+    run['config/model_architecture'].upload(File.from_content(str(learn.model)))
 
 
 def _log_dataset_metadata(run: neptune.Run, learn):
@@ -183,3 +169,13 @@ def _log_dataset_metadata(run: neptune.Run, learn):
         'size': learn.dls.n,
         'sha': sha.hexdigest(),
     }
+
+
+def _log_model(save, run: neptune.Run, learn):
+    def _save_model_logger(*args, **kwargs):
+        path = save(*args, **kwargs)
+
+        if path is not None and path.exists():
+            run['io_files/artifacts/model/best'].upload(str(path), wait=True)
+            run[f'io_files/artifacts/model/epoch_{learn.epoch}'].upload(str(path), wait=True)
+    return _save_model_logger
