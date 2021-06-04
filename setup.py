@@ -15,6 +15,10 @@ def main():
     for group_name in extras:
         all_deps += extras[group_name]
     extras['all'] = all_deps
+    extras['dev'] = [
+        'pylint',
+        'pylintfileheader'
+    ]
 
     base_libs = ['neptune-client>=0.9.8', 'fastai']
 
