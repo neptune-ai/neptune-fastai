@@ -181,8 +181,7 @@ def _log_dataset_metadata(run: neptune.Run, learn: Learner):
         'size': learn.dls.n,
         'sha': sha.hexdigest(),
     }
-
-
+    
 def _log_model(save, run: neptune.Run, learn: Learner):
     def _save_model_logger(*args, **kwargs):
         path = save(*args, **kwargs)
