@@ -1,1 +1,1 @@
-include neptune_integration_template/_version.py  # TODO: Update path
+include neptune_fastai/_version.py

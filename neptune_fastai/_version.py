@@ -1,3 +1,4 @@
+# pylint: skip-file
 
 # This file helps to compute a version number in source trees obtained from
 # git-archive tarball (such as those provided by githubs download-from-tag
@@ -43,7 +44,7 @@ def get_config():
     cfg.style = "pep440"
     cfg.tag_prefix = ""
     cfg.parentdir_prefix = ""
-    cfg.versionfile_source = "neptune_integration_template/_version.py"
+    cfg.versionfile_source = "neptune_fastai/_version.py"
     cfg.verbose = False
     return cfg
 

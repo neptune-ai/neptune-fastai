@@ -1,4 +1,4 @@
-name: neptune-integration-template  # TODO: github repo name
+name: neptune-fastai
 on: [push]
 jobs:
   publish:

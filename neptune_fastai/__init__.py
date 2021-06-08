@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-from neptune_integration_template._version import get_versions
+from neptune_fastai._version import get_versions
 
 __all__ = [
     '__version__',
