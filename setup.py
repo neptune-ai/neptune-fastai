@@ -15,8 +15,12 @@ def main():
     for group_name in extras:
         all_deps += extras[group_name]
     extras['all'] = all_deps
+    extras['dev'] = [
+        'pylint',
+        'pylintfileheader'
+    ]
 
-    base_libs = ['neptune-client>=0.9.17', 'fastai']
+    base_libs = ['neptune-client>=0.9.17', 'fastai>=2.0.0']
 
     version = None
     if os.path.exists('PKG-INFO'):
