@@ -1,13 +1,9 @@
 from neptune import new as neptune
 from neptune_fastai.impl import NeptuneCallback
 
-from fastai.basics import *
-from fastai.tabular.all import *
-from fastai.callback.all import *
-from fastai.distributed import *
-from fastprogress import fastprogress
-from fastai.callback.mixup import *
-from fastcore.script import *
+from fastai.basics import URLs, untar_data, accuracy
+from fastai.tabular.all import tabular_learner, TabularDataLoaders, Categorify, FillMissing, Normalize
+from fastai.callback.all import SaveModelCallback
 
 
 def main():
@@ -32,10 +28,10 @@ def main():
     learn = tabular_learner(dls,
                             metrics=accuracy,
                             cbs=[
-                                NeptuneCallback(run=neptune_run),
+                                NeptuneCallback(run=neptune_run, base_namespace='experiment'),
                                 SaveModelCallback()
                             ])
-    learn.fit_one_cycle(10)
+    learn.fit_one_cycle(3)
 
 
 if __name__ == '__main__':

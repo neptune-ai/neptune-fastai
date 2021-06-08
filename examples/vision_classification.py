@@ -1,15 +1,11 @@
 from neptune import new as neptune
 from neptune_fastai.impl import NeptuneCallback
 
-from fastai.basics import *
-from fastai.vision.all import *
-from fastai.callback.all import *
-from fastai.distributed import *
-from fastprogress import fastprogress
-from fastai.callback.mixup import *
-from fastcore.script import *
-
 from itertools import islice
+
+from fastai.basics import untar_data, URLs, error_rate
+from fastai.vision.all import ImageDataLoaders, get_image_files, Resize, cnn_learner, resnet34
+from fastai.callback.all import SaveModelCallback
 
 
 def is_cat(x):
@@ -36,7 +32,7 @@ def main():
                             NeptuneCallback(neptune_run, save_best_model=False),
                             SaveModelCallback()
                         ])
-    learn.fit_one_cycle(3)
+    learn.fit_one_cycle(2)
 
 
 if __name__ == '__main__':
