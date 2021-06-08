@@ -18,7 +18,6 @@ __all__ = [
     'NeptuneCallback'
 ]
 
-import tempfile
 import time
 import hashlib
 from typing import List
@@ -26,7 +25,6 @@ from typing import List
 from fastai.learner import Learner
 from fastai.callback.hook import total_params
 from fastai.basics import Callback, store_attr
-from fastai.callback.core import FetchPredsCallback
 from fastai.callback.tracker import SaveModelCallback
 from fastai.torch_core import trainable_params, default_device
 
@@ -92,6 +90,10 @@ class NeptuneCallback(Callback):
         return sum([p.numel() for p in trainable_params(self.learn)])
 
     @property
+    def _optimizer_criterion(self) -> str:
+        return repr(self.loss_func.func)
+
+    @property
     def _optimizer_hyperparams(self):
         if len(self.learn.opt.hypers) == 1:
             return dict(self.learn.opt.hypers[0])
@@ -120,19 +122,24 @@ class NeptuneCallback(Callback):
     def before_fit(self):
         self.neptune_run['config'] = {
             'n_epoch': self.n_epoch,
-            'batch_size': self._batch_size,
-            'optimizer_name': self._optimizer_name,
-            'vocab': {
-                'details': self._vocab,
-                'total': len(self._vocab)
-            },
             'device': self._device,
-            'model_params': {
-                'total': self._total_model_parameters,
-                'trainable_params': self._trainable_model_parameters,
-                'non_trainable_params': self._total_model_parameters - self._trainable_model_parameters
+            'model': {
+                'batch_size': self._batch_size,
+                'vocab': {
+                    'details': self._vocab,
+                    'total': len(self._vocab)
+                },
+                'params': {
+                    'total': self._total_model_parameters,
+                    'trainable_params': self._trainable_model_parameters,
+                    'non_trainable_params': self._total_model_parameters - self._trainable_model_parameters
+                },
             },
-            'initial_optimizer_hyperparameters': self._optimizer_hyperparams,
+            'optimizer': {
+                'name': self._optimizer_name,
+                'criterion': self._optimizer_criterion,
+                'initial_hyperparameters': self._optimizer_hyperparams,
+            }
         }
 
         _log_model_architecture(self.neptune_run, self.learn)
@@ -155,7 +162,7 @@ class NeptuneCallback(Callback):
     def after_epoch(self):
         for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
             if metric_name not in {'epoch', 'time'}:
-                self.neptune_run[f'logs/training/epoch/{metric_name}'].log(value=metric_value)
+                self.neptune_run[f'logs/training/epoch/{metric_name}'].log(metric_value)
         self.neptune_run['logs/training/epoch/duration'].log(value=time.time() - self.learn.recorder.start_epoch)
 
         for param, value in self._optimizer_hyperparams.items():
@@ -168,9 +175,12 @@ class NeptuneCallback(Callback):
 
 def _log_model_architecture(run: neptune.Run, learn: Learner):
     if hasattr(learn, 'arch'):
-        run['config/arch'] = getattr(learn.arch, '__name__', '')
+        run['config/model/architecture_name'] = getattr(learn.arch, '__name__', '')
 
-    run['config/model_architecture'].upload(File.from_content(repr(learn.model)))
+    model = File.from_content(repr(learn.model))
+
+    run['config/model/architecture'].upload(model)
+    run['io_files/artifacts/model_architecture'].upload(model)
 
 
 def _log_dataset_metadata(run: neptune.Run, learn: Learner):
