@@ -20,7 +20,7 @@ def main():
         'pylintfileheader'
     ]
 
-    base_libs = ['neptune-client>=0.9.17', 'fastai>=2.0.0']
+    base_libs = ['neptune-client>=0.9.16', 'fastai>=2.0.0']
 
     version = None
     if os.path.exists('PKG-INFO'):
