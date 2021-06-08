@@ -19,7 +19,6 @@ __all__ = [
     # https://docs.python.org/3/tutorial/modules.html#importing-from-a-package
 ]
 
-# TODO: use `warnings.warn` for user caused problems: https://stackoverflow.com/a/14762106/1565454
 import warnings
 
 try:
@@ -31,8 +30,11 @@ except ImportError:
     import neptune
     from neptune.internal.utils import verify_type
 
-from neptune_integration_template import __version__  # TODO: change module name
+from neptune_fastai import __version__
+from fastai.basics import Callback
 
-INTEGRATION_VERSION_KEY = 'source_code/integrations/integration-template'  # TODO: change path
+INTEGRATION_VERSION_KEY = 'source_code/integrations/neptune-fastai'
 
-# TODO: Implementation of neptune-integration here
+
+class NeptuneCallback(Callback):
+    pass
