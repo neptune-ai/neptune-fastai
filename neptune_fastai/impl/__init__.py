@@ -155,14 +155,11 @@ class NeptuneCallback(Callback):
     def after_epoch(self):
         for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
             if metric_name not in {'epoch', 'time'}:
-                self.neptune_run[f'logs/training/epoch/{metric_name}'].log(value=metric_value, step=int(self.epoch))
-        self.neptune_run['logs/training/epoch/duration'].log(
-            value=time.time() - self.learn.recorder.start_epoch,
-            step=int(self.epoch)
-        )
+                self.neptune_run[f'logs/training/epoch/{metric_name}'].log(value=metric_value)
+        self.neptune_run['logs/training/epoch/duration'].log(value=time.time() - self.learn.recorder.start_epoch)
 
         for param, value in self._optimizer_hyperparams.items():
-            self.neptune_run[f'logs/training/epoch/optimizer_hyperparameters/{param}'].log(value, step=int(self.epoch))
+            self.neptune_run[f'logs/training/epoch/optimizer_hyperparameters/{param}'].log(value)
 
         if self.n_epoch > 1 and self.save_model_freq > 0 and self.save_best_model:
             if self.epoch % self.save_model_freq == 0:
