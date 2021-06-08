@@ -16,7 +16,7 @@ def main():
         all_deps += extras[group_name]
     extras['all'] = all_deps
 
-    base_libs = ['neptune-client>=0.9.8', 'fastai']
+    base_libs = ['neptune-client>=0.9.17', 'fastai']
 
     version = None
     if os.path.exists('PKG-INFO'):
