@@ -123,8 +123,8 @@ class NeptuneCallback(Callback):
         self.neptune_run['config'] = {
             'n_epoch': self.n_epoch,
             'device': self._device,
+            'batch_size': self._batch_size,
             'model': {
-                'batch_size': self._batch_size,
                 'vocab': {
                     'details': self._vocab,
                     'total': len(self._vocab)
@@ -135,9 +135,9 @@ class NeptuneCallback(Callback):
                     'non_trainable_params': self._total_model_parameters - self._trainable_model_parameters
                 },
             },
+            'criterion': self._optimizer_criterion,
             'optimizer': {
                 'name': self._optimizer_name,
-                'criterion': self._optimizer_criterion,
                 'initial_hyperparameters': self._optimizer_hyperparams,
             }
         }
@@ -154,19 +154,24 @@ class NeptuneCallback(Callback):
 
     def after_batch(self):
         if self.learn.training:
-            self.neptune_run['logs/training/batch/loss'].log(value=self.learn.loss.clone())
+            self.neptune_run['metrics/training/batch/loss'].log(value=self.learn.loss.clone())
 
             if hasattr(self, 'smooth_loss'):
-                self.neptune_run['logs/training/batch/smooth_loss'].log(value=self.learn.smooth_loss.clone())
+                self.neptune_run['metrics/training/batch/smooth_loss'].log(value=self.learn.smooth_loss.clone())
 
     def after_epoch(self):
         for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
             if metric_name not in {'epoch', 'time'}:
-                self.neptune_run[f'logs/training/epoch/{metric_name}'].log(metric_value)
-        self.neptune_run['logs/training/epoch/duration'].log(value=time.time() - self.learn.recorder.start_epoch)
+                self.neptune_run[f'metrics/training/epoch/{metric_name}'].log(metric_value)
+        self.neptune_run['metrics/training/epoch/duration'].log(value=time.time() - self.learn.recorder.start_epoch)
 
         for param, value in self._optimizer_hyperparams.items():
-            self.neptune_run[f'logs/training/epoch/optimizer_hyperparameters/{param}'].log(value)
+            _log_or_assign_metric(
+                self.neptune_run,
+                self.n_epoch,
+                f'metrics/training/epoch/optimizer_hyperparameters/{param}',
+                value
+            )
 
         if self.n_epoch > 1 and self.save_model_freq > 0 and self.save_best_model:
             if self.epoch % self.save_model_freq == 0:
@@ -198,6 +203,13 @@ def _log_model(save, run: neptune.Run, learn: Learner):
         path = save(*args, **kwargs)
 
         if path is not None and path.exists():
-            run['io_files/artifacts/model/best'].upload(str(path), wait=True)
-            run[f'io_files/artifacts/model/epoch_{learn.epoch}'].upload(str(path), wait=True)
+            run['io_files/artifacts/model_checkpoints/best'].upload(str(path), wait=True)
+            run[f'io_files/artifacts/model_checkpoints/epoch_{learn.epoch}'].upload(str(path), wait=True)
     return _save_model_logger
+
+
+def _log_or_assign_metric(run: neptune.Run, number_of_epochs: int, metric: str, value):
+    if number_of_epochs > 1:
+        run[metric].log(value)
+    else:
+        run[metric] = value
