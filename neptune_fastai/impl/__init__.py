@@ -44,6 +44,18 @@ from neptune_fastai import __version__
 INTEGRATION_VERSION_KEY = 'source_code/integrations/neptune-fastai'
 
 
+def _retrieve_fit_index(run: neptune.Run, path: tuple = ('metrics', 'training', 'epoch')):
+    elem = run.get_structure()
+
+    for p in path:
+        if p in elem:
+            elem = elem[p]
+        else:
+            return 0
+
+    return len(elem)
+
+
 class NeptuneCallback(Callback):
     def __init__(self,
                  run: neptune.Run,
@@ -58,11 +70,12 @@ class NeptuneCallback(Callback):
         verify_type('save_best_model', save_best_model, bool)
         verify_type('save_model_freq', save_model_freq, int)
 
-        self.neptune_run = run
+        self.neptune_run = run[base_namespace]
+        self.fit_index = _retrieve_fit_index(run)
 
         run[INTEGRATION_VERSION_KEY] = __version__
 
-        store_attr('base_namespace,save_best_model,save_model_freq')
+        store_attr('save_best_model,save_model_freq')
 
     @property
     def _batch_size(self) -> int:
@@ -116,7 +129,8 @@ class NeptuneCallback(Callback):
             self.learn.save = _log_model(
                 self.learn.save,
                 self.neptune_run,
-                self.learn
+                self.learn,
+                self.fit_index
             )
 
     def before_fit(self):
@@ -159,17 +173,22 @@ class NeptuneCallback(Callback):
             if hasattr(self, 'smooth_loss'):
                 self.neptune_run['metrics/training/batch/smooth_loss'].log(value=self.learn.smooth_loss.clone())
 
+    def after_fit(self):
+        self.fit_index += 1
+
     def after_epoch(self):
         for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
             if metric_name not in {'epoch', 'time'}:
-                self.neptune_run[f'metrics/training/epoch/{metric_name}'].log(metric_value)
-        self.neptune_run['metrics/training/epoch/duration'].log(value=time.time() - self.learn.recorder.start_epoch)
+                self.neptune_run[f'metrics/training/epoch/fit_{self.fit_index}/{metric_name}'].log(metric_value)
+        self.neptune_run[f'metrics/training/epoch/fit_{self.fit_index}/duration'].log(
+            value=time.time() - self.learn.recorder.start_epoch
+        )
 
         for param, value in self._optimizer_hyperparams.items():
             _log_or_assign_metric(
                 self.neptune_run,
                 self.n_epoch,
-                f'metrics/training/epoch/optimizer_hyperparameters/{param}',
+                f'metrics/training/epoch/fit_{self.fit_index}/optimizer_hyperparameters/{param}',
                 value
             )
 
@@ -198,13 +217,13 @@ def _log_dataset_metadata(run: neptune.Run, learn: Learner):
     }
 
 
-def _log_model(save, run: neptune.Run, learn: Learner):
+def _log_model(save, run: neptune.Run, learn: Learner, fit_index: int):
     def _save_model_logger(*args, **kwargs):
         path = save(*args, **kwargs)
 
         if path is not None and path.exists():
-            run['io_files/artifacts/model_checkpoints/best'].upload(str(path), wait=True)
-            run[f'io_files/artifacts/model_checkpoints/epoch_{learn.epoch}'].upload(str(path), wait=True)
+            run[f'io_files/artifacts/model_checkpoints/fit_{fit_index}/best'].upload(str(path), wait=True)
+            run[f'io_files/artifacts/model_checkpoints/fit_{fit_index}/epoch_{learn.epoch}'].upload(str(path), wait=True)
     return _save_model_logger
 
 
