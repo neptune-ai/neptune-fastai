@@ -20,6 +20,7 @@ __all__ = [
 
 import time
 import hashlib
+import warnings
 from typing import List
 
 from fastai.learner import Learner
@@ -111,6 +112,8 @@ class NeptuneCallback(Callback):
     def after_create(self):
         if self.save_best_model:
             if not hasattr(self, 'save_model'):
+                warnings.warn(f'{self.name}Callback called with save_best_model set to True without explicitly defined '
+                              f'SaveModelCallback(). Will continue with the default one.')
                 self.learn.add_cb(SaveModelCallback())
 
             self.learn.save = _log_model(
