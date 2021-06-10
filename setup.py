@@ -16,8 +16,12 @@ def main():
         all_deps += extras[group_name]
     extras['all'] = all_deps
     extras['dev'] = [
-        'pylint',
-        'pylintfileheader'
+        'pylint==2.4.2',
+        'pylintfileheader==0.0.2',
+        'pytest>=5.0',
+        'pytest-cov==2.10.1',
+        'pytest-xdist==2.2.0',
+        'tox==3.6.1'
     ]
 
     base_libs = ['neptune-client>=0.9.16', 'fastai>=2.0.0']

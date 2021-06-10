@@ -1,6 +1,8 @@
 name: neptune-fastai
 on: [push]
 jobs:
+  lint:
+
   test:
     runs-on: ${{ matrix.os }}
     strategy:
