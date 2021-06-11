@@ -24,7 +24,7 @@ from typing import List
 
 from fastai.learner import Learner
 from fastai.callback.hook import total_params
-from fastai.basics import Callback, store_attr
+from fastai.basics import Callback, store_attr, Recorder
 from fastai.callback.tracker import SaveModelCallback
 from fastai.torch_core import trainable_params, default_device
 
@@ -44,19 +44,9 @@ from neptune_fastai import __version__
 INTEGRATION_VERSION_KEY = 'source_code/integrations/neptune-fastai'
 
 
-def _retrieve_fit_index(run: neptune.Run, path: tuple = ('metrics', 'training', 'epoch')):
-    elem = run.get_structure()
-
-    for p in path:
-        if p in elem:
-            elem = elem[p]
-        else:
-            return 0
-
-    return len(elem)
-
-
 class NeptuneCallback(Callback):
+    order = Recorder.order + 1
+
     def __init__(self,
                  run: neptune.Run,
                  base_namespace: str = '',
@@ -70,12 +60,12 @@ class NeptuneCallback(Callback):
         verify_type('save_best_model', save_best_model, bool)
         verify_type('save_model_freq', save_model_freq, int)
 
-        self.neptune_run = run[base_namespace]
-        self.fit_index = _retrieve_fit_index(run)
+        self.neptune_run = run
+        self.fit_index = _retrieve_fit_index(run, f'{base_namespace}/metrics/')
 
         run[INTEGRATION_VERSION_KEY] = __version__
 
-        store_attr('save_best_model,save_model_freq')
+        store_attr('base_namespace,save_best_model,save_model_freq')
 
     @property
     def _batch_size(self) -> int:
@@ -121,20 +111,8 @@ class NeptuneCallback(Callback):
     def name(self) -> str:
         return 'Neptune'
 
-    def after_create(self):
-        if self.save_best_model:
-            if not hasattr(self, 'save_model'):
-                self.learn.add_cb(SaveModelCallback())
-
-            self.learn.save = _log_model(
-                self.learn.save,
-                self.neptune_run,
-                self.learn,
-                self.fit_index
-            )
-
     def before_fit(self):
-        self.neptune_run['config'] = {
+        self.neptune_run[f'{self.base_namespace}/config'] = {
             'n_epoch': self.n_epoch,
             'device': self._device,
             'batch_size': self._batch_size,
@@ -156,75 +134,81 @@ class NeptuneCallback(Callback):
             }
         }
 
-        _log_model_architecture(self.neptune_run, self.learn)
-        _log_dataset_metadata(self.neptune_run, self.learn)
+        _log_model_architecture(self.neptune_run, self.base_namespace, self.learn)
+        _log_dataset_metadata(self.neptune_run, self.base_namespace, self.learn)
 
     def before_batch(self):
         if self.learn.train_iter == 1:
-            self.neptune_run['config/input_shape'] = {
+            self.neptune_run[f'{self.base_namespace}/config/input_shape'] = {
                 'x': str(list(self.x[0].shape)),
                 'y': 1 if len(self.y[0].shape) == 0 else str(list(self.y[0].shape))
             }
 
     def after_batch(self):
-        if self.learn.training:
-            self.neptune_run['metrics/training/batch/loss'].log(value=self.learn.loss.clone())
+        target = 'training'
 
-            if hasattr(self, 'smooth_loss'):
-                self.neptune_run['metrics/training/batch/smooth_loss'].log(value=self.learn.smooth_loss.clone())
+        if not self.learn.training:
+            target = 'validation'
+
+        prefix = f'{self.base_namespace}/metrics/fit_{self.fit_index}/{target}/batch'
+        self.neptune_run[f'{prefix}/loss'].log(
+            value=self.learn.loss.clone()
+        )
+
+        if hasattr(self, 'smooth_loss'):
+            self.neptune_run[f'{prefix}/smooth_loss'].log(
+                value=self.learn.smooth_loss.clone()
+            )
+
+    def after_train(self):
+        prefix = f'{self.base_namespace}/metrics/fit_{self.fit_index}/training/epoch'
+
+        for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
+            if metric_name not in {'epoch', 'time'}:
+                self.neptune_run[f'{prefix}/{metric_name}'].log(metric_value)
+
+        self.neptune_run[f'{prefix}/duration'].log(
+            value=time.time() - self.learn.recorder.start_epoch
+        )
+
+        _log_optimizer_hyperparams(self.neptune_run,
+                                   f'{prefix}/optimizer_hyperparameters',
+                                   self._optimizer_hyperparams,
+                                   self.n_epoch)
+
+    def after_validate(self):
+        prefix = f'{self.base_namespace}/metrics/fit_{self.fit_index}/validation/epoch'
+
+        for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
+            if metric_name not in {'epoch', 'time', 'train_loss'}:
+                self.neptune_run[f'{prefix}/{metric_name}'].log(metric_value)
+
+        self.neptune_run[f'{prefix}/duration'].log(
+            value=time.time() - self.learn.recorder.start_epoch
+        )
 
     def after_fit(self):
         self.fit_index += 1
 
-    def after_epoch(self):
-        for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
-            if metric_name not in {'epoch', 'time'}:
-                self.neptune_run[f'metrics/training/epoch/fit_{self.fit_index}/{metric_name}'].log(metric_value)
-        self.neptune_run[f'metrics/training/epoch/fit_{self.fit_index}/duration'].log(
-            value=time.time() - self.learn.recorder.start_epoch
-        )
 
-        for param, value in self._optimizer_hyperparams.items():
-            _log_or_assign_metric(
-                self.neptune_run,
-                self.n_epoch,
-                f'metrics/training/epoch/fit_{self.fit_index}/optimizer_hyperparameters/{param}',
-                value
-            )
-
-        if self.n_epoch > 1 and self.save_model_freq > 0 and self.save_best_model:
-            if self.epoch % self.save_model_freq == 0:
-                self.learn.save(f'{self.learn.save_model.fname}')
-
-
-def _log_model_architecture(run: neptune.Run, learn: Learner):
+def _log_model_architecture(run: neptune.Run, base_namespace: str, learn: Learner):
     if hasattr(learn, 'arch'):
-        run['config/model/architecture_name'] = getattr(learn.arch, '__name__', '')
+        run[f'{base_namespace}/config/model/architecture_name'] = getattr(learn.arch, '__name__', '')
 
     model = File.from_content(repr(learn.model))
 
-    run['config/model/architecture'].upload(model)
-    run['io_files/artifacts/model_architecture'].upload(model)
+    run[f'{base_namespace}/config/model/architecture'].upload(model)
+    run[f'{base_namespace}/io_files/artifacts/model_architecture'].upload(model)
 
 
-def _log_dataset_metadata(run: neptune.Run, learn: Learner):
+def _log_dataset_metadata(run: neptune.Run, base_namespace: str, learn: Learner):
     sha = hashlib.sha1(str(learn.dls.path).encode())
 
-    run['io_files/resources/dataset'] = {
+    run[f'{base_namespace}/io_files/resources/dataset'] = {
         'path': learn.dls.path,
         'size': learn.dls.n,
         'sha': sha.hexdigest(),
     }
-
-
-def _log_model(save, run: neptune.Run, learn: Learner, fit_index: int):
-    def _save_model_logger(*args, **kwargs):
-        path = save(*args, **kwargs)
-
-        if path is not None and path.exists():
-            run[f'io_files/artifacts/model_checkpoints/fit_{fit_index}/best'].upload(str(path), wait=True)
-            run[f'io_files/artifacts/model_checkpoints/fit_{fit_index}/epoch_{learn.epoch}'].upload(str(path), wait=True)
-    return _save_model_logger
 
 
 def _log_or_assign_metric(run: neptune.Run, number_of_epochs: int, metric: str, value):
@@ -232,3 +216,17 @@ def _log_or_assign_metric(run: neptune.Run, number_of_epochs: int, metric: str, 
         run[metric].log(value)
     else:
         run[metric] = value
+
+
+def _retrieve_fit_index(run: neptune.Run, path: str):
+    return len(run.get_attribute(path) or [])
+
+
+def _log_optimizer_hyperparams(run: neptune.Run, prefix: str, optimizer_hyperparams: dict, n_epoch: int):
+    for param, value in optimizer_hyperparams.items():
+        _log_or_assign_metric(
+            run,
+            n_epoch,
+            f'{prefix}/{param}',
+            value
+        )
