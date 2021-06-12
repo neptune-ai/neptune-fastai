@@ -24,8 +24,8 @@ from typing import List
 
 from fastai.learner import Learner
 from fastai.callback.hook import total_params
-from fastai.basics import Callback, store_attr, Recorder, join_path_file
 from fastai.callback.tracker import SaveModelCallback
+from fastai.basics import Callback, store_attr, join_path_file
 from fastai.torch_core import trainable_params, default_device
 
 try:
@@ -61,6 +61,7 @@ class NeptuneCallback(Callback):
         verify_type('save_model_freq', save_model_freq, int)
 
         self.neptune_run = run
+        self.best_model_epoch = 0
         self.fit_index = _retrieve_fit_index(run, f'{base_namespace}/metrics/')
 
         run[INTEGRATION_VERSION_KEY] = __version__
@@ -216,7 +217,23 @@ class NeptuneCallback(Callback):
                     prefix = f'{self.base_namespace}/io_files/artifacts/model_checkpoints/fit_{self.fit_index}/epoch_{self.learn.epoch}'
                     self.neptune_run[prefix].upload(str(path))
 
+        if self.save_best_model:
+            if hasattr(self, 'save_model') and hasattr(self.save_model, 'every_epoch') and self.save_model.every_epoch:
+                super(type(self.save_model), self.save_model).after_epoch()
+
+                if hasattr(self.save_model, 'new_best') and self.save_model.new_best:
+                    self.best_model_epoch = self.epoch
+
     def after_fit(self):
+        if self.save_best_model:
+            if hasattr(self, 'save_model') and hasattr(self.save_model, 'every_epoch') and self.save_model.every_epoch:
+                path = join_path_file(f'{self.learn.save_model.fname}_{self.best_model_epoch}',
+                                      self.learn.path / self.learn.model_dir,
+                                      ext='.pth')
+                prefix = f'{self.base_namespace}/io_files/artifacts/model_checkpoints/fit_{self.fit_index}/best'
+                print(path)
+                self.neptune_run[prefix].upload(str(path))
+
         self.fit_index += 1
 
 
