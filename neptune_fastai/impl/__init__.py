@@ -24,7 +24,7 @@ from typing import List
 
 from fastai.learner import Learner
 from fastai.callback.hook import total_params
-from fastai.basics import Callback, store_attr, Recorder
+from fastai.basics import Callback, store_attr, Recorder, join_path_file
 from fastai.callback.tracker import SaveModelCallback
 from fastai.torch_core import trainable_params, default_device
 
@@ -45,7 +45,7 @@ INTEGRATION_VERSION_KEY = 'source_code/integrations/neptune-fastai'
 
 
 class NeptuneCallback(Callback):
-    order = Recorder.order + 1
+    order = SaveModelCallback.order + 1
 
     def __init__(self,
                  run: neptune.Run,
@@ -205,6 +205,16 @@ class NeptuneCallback(Callback):
         self.neptune_run[f'{prefix}/duration'].log(
             value=time.time() - self.learn.recorder.start_epoch
         )
+
+    def after_epoch(self):
+        if self.save_model_freq > 0:
+            if hasattr(self, 'save_model') and hasattr(self.save_model, 'every_epoch') and self.save_model.every_epoch:
+                if self.epoch % self.save_model_freq == 0:
+                    path = join_path_file(f'{self.learn.save_model.fname}_{self.learn.save_model.epoch}',
+                                          self.learn.path / self.learn.model_dir,
+                                          ext='.pth')
+                    prefix = f'{self.base_namespace}/io_files/artifacts/model_checkpoints/fit_{self.fit_index}/epoch_{self.learn.epoch}'
+                    self.neptune_run[prefix].upload(str(path))
 
     def after_fit(self):
         self.fit_index += 1
