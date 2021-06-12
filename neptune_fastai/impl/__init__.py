@@ -108,12 +108,15 @@ class NeptuneCallback(Callback):
         }
 
     @property
-    def name(self) -> str:
-        return 'Neptune'
+    def _frozen_level(self):
+        return self.opt.frozen_idx if hasattr(self, 'opt') and hasattr(self.opt, 'frozen_idx') else 0
 
-    def before_fit(self):
+    @property
+    def name(self) -> str:
+        return 'neptune'
+
+    def after_create(self):
         self.neptune_run[f'{self.base_namespace}/config'] = {
-            'n_epoch': self.n_epoch,
             'device': self._device,
             'batch_size': self._batch_size,
             'model': {
@@ -130,14 +133,30 @@ class NeptuneCallback(Callback):
             'criterion': self._optimizer_criterion,
             'optimizer': {
                 'name': self._optimizer_name,
-                'initial_hyperparameters': self._optimizer_hyperparams,
             }
         }
 
         _log_model_architecture(self.neptune_run, self.base_namespace, self.learn)
         _log_dataset_metadata(self.neptune_run, self.base_namespace, self.learn)
 
+    def before_fit(self):
+        self.neptune_run[f'{self.base_namespace}/config/optimizer/initial_hyperparameters'] = self._optimizer_hyperparams
+
+        prefix = f'{self.base_namespace}/metrics/fit_{self.fit_index}'
+
+        self.neptune_run[f'{prefix}/n_epoch'] = self.n_epoch
+
+        if self._frozen_level > 0:
+            self.neptune_run[f'{prefix}/frozen_level'] = self._frozen_level
+
     def before_batch(self):
+        target = 'training'
+        if not self.learn.training:
+            target = 'validation'
+
+        if self.learn.iter == 0:
+            self.neptune_run[f'{self.base_namespace}/metrics/fit_{self.fit_index}/{target}/n_iter'] = self.n_iter
+
         if self.learn.train_iter == 1:
             self.neptune_run[f'{self.base_namespace}/config/input_shape'] = {
                 'x': str(list(self.x[0].shape)),
@@ -146,11 +165,11 @@ class NeptuneCallback(Callback):
 
     def after_batch(self):
         target = 'training'
-
         if not self.learn.training:
             target = 'validation'
 
         prefix = f'{self.base_namespace}/metrics/fit_{self.fit_index}/{target}/batch'
+
         self.neptune_run[f'{prefix}/loss'].log(
             value=self.learn.loss.clone()
         )
