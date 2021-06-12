@@ -150,6 +150,8 @@ class NeptuneCallback(Callback):
         if self._frozen_level > 0:
             self.neptune_run[f'{prefix}/frozen_level'] = self._frozen_level
 
+        # TODO: Check for save callback
+
     def before_batch(self):
         target = 'training'
         if not self.learn.training:
@@ -230,9 +232,12 @@ class NeptuneCallback(Callback):
                 path = join_path_file(f'{self.learn.save_model.fname}_{self.best_model_epoch}',
                                       self.learn.path / self.learn.model_dir,
                                       ext='.pth')
-                prefix = f'{self.base_namespace}/io_files/artifacts/model_checkpoints/fit_{self.fit_index}/best'
-                print(path)
-                self.neptune_run[prefix].upload(str(path))
+            else:
+                path = join_path_file(f'{self.learn.save_model.fname}', self.learn.path / self.learn.model_dir, ext='.pth')
+
+            prefix = f'{self.base_namespace}/io_files/artifacts/model_checkpoints/fit_{self.fit_index}/best'
+            print(prefix, path)
+            self.neptune_run[prefix].upload(str(path))
 
         self.fit_index += 1
 

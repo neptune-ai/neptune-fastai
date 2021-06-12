@@ -30,9 +30,8 @@ def main():
                             cbs=[
                                 NeptuneCallback(run=neptune_run,
                                                 base_namespace='experiment',
-                                                save_best_model=True,
-                                                save_model_freq=2),
-                                SaveModelCallback(monitor='accuracy', every_epoch=True)
+                                                save_best_model=True),
+                                SaveModelCallback(monitor='accuracy', every_epoch=False)
                             ])
     learn.fit_one_cycle(10)
 
