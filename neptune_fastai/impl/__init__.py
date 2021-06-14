@@ -20,12 +20,13 @@ __all__ = [
 
 import time
 import hashlib
+import warnings
 from typing import List
 
 from fastai.learner import Learner
 from fastai.callback.hook import total_params
-from fastai.basics import Callback, store_attr, Recorder
 from fastai.callback.tracker import SaveModelCallback
+from fastai.basics import Callback, store_attr, join_path_file
 from fastai.torch_core import trainable_params, default_device
 
 try:
@@ -45,7 +46,7 @@ INTEGRATION_VERSION_KEY = 'source_code/integrations/neptune-fastai'
 
 
 class NeptuneCallback(Callback):
-    order = Recorder.order + 1
+    order = SaveModelCallback.order + 1
 
     def __init__(self,
                  run: neptune.Run,
@@ -61,6 +62,7 @@ class NeptuneCallback(Callback):
         verify_type('save_model_freq', save_model_freq, int)
 
         self.neptune_run = run
+        self.best_model_epoch = 0
         self.fit_index = _retrieve_fit_index(run, f'{base_namespace}/metrics/')
 
         run[INTEGRATION_VERSION_KEY] = __version__
@@ -115,7 +117,7 @@ class NeptuneCallback(Callback):
     def name(self) -> str:
         return 'neptune'
 
-    def after_create(self):
+    def before_fit(self):
         self.neptune_run[f'{self.base_namespace}/config'] = {
             'device': self._device,
             'batch_size': self._batch_size,
@@ -139,7 +141,6 @@ class NeptuneCallback(Callback):
         _log_model_architecture(self.neptune_run, self.base_namespace, self.learn)
         _log_dataset_metadata(self.neptune_run, self.base_namespace, self.learn)
 
-    def before_fit(self):
         self.neptune_run[f'{self.base_namespace}/config/optimizer/initial_hyperparameters'] = self._optimizer_hyperparams
 
         prefix = f'{self.base_namespace}/metrics/fit_{self.fit_index}'
@@ -148,6 +149,17 @@ class NeptuneCallback(Callback):
 
         if self._frozen_level > 0:
             self.neptune_run[f'{prefix}/frozen_level'] = self._frozen_level
+
+        every_epoch = self.save_model_freq > 0
+        if hasattr(self, 'save_model') and every_epoch and not self.save_model.every_epoch:
+            warnings.warn(
+                'NeptuneCallback: SaveModelCallback is required to have every_epoch set to True when using '
+                'save_model_freq. Model checkpoints will not be uploaded.'
+            )
+            self.save_model_freq = 0
+
+        elif every_epoch or self.save_best_model:
+            self.cbs.add(SaveModelCallback(every_epoch=every_epoch))
 
     def before_batch(self):
         target = 'training'
@@ -206,7 +218,34 @@ class NeptuneCallback(Callback):
             value=time.time() - self.learn.recorder.start_epoch
         )
 
+    def after_epoch(self):
+        if hasattr(self, 'save_model') and hasattr(self.save_model, 'every_epoch') and self.save_model.every_epoch:
+            if self.save_model_freq > 0:
+                if self.epoch % self.save_model_freq == 0:
+                    path = join_path_file(f'{self.learn.save_model.fname}_{self.learn.save_model.epoch}',
+                                          self.learn.path / self.learn.model_dir,
+                                          ext='.pth')
+                    prefix = f'{self.base_namespace}/io_files/artifacts/model_checkpoints/fit_{self.fit_index}/epoch_{self.learn.epoch}'
+                    self.neptune_run[prefix].upload(str(path))
+
+            if self.save_best_model:
+                super(type(self.save_model), self.save_model).after_epoch()
+
+                if hasattr(self.save_model, 'new_best') and self.save_model.new_best:
+                    self.best_model_epoch = self.epoch
+
     def after_fit(self):
+        if self.save_best_model:
+            if hasattr(self, 'save_model') and hasattr(self.save_model, 'every_epoch') and self.save_model.every_epoch:
+                path = join_path_file(f'{self.learn.save_model.fname}_{self.best_model_epoch}',
+                                      self.learn.path / self.learn.model_dir,
+                                      ext='.pth')
+            else:
+                path = join_path_file(f'{self.learn.save_model.fname}', self.learn.path / self.learn.model_dir, ext='.pth')
+
+            prefix = f'{self.base_namespace}/io_files/artifacts/model_checkpoints/fit_{self.fit_index}/best'
+            self.neptune_run[prefix].upload(str(path))
+
         self.fit_index += 1
 
 
