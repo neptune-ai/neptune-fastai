@@ -13,12 +13,12 @@ def is_cat(x):
 
 
 def main():
-    neptune_run = neptune.init()
+    neptune_run = neptune.init(run='FAS-200')
 
     path = untar_data(URLs.PETS) / 'images'
 
     dls = ImageDataLoaders.from_name_func(path,
-                                          list(islice(get_image_files(path), 128)),
+                                          list(islice(get_image_files(path), 256)),
                                           valid_pct=0.2,
                                           seed=42,
                                           label_func=is_cat,
@@ -29,10 +29,14 @@ def main():
                         resnet34,
                         metrics=error_rate,
                         cbs=[
-                            NeptuneCallback(neptune_run, save_best_model=False),
-                            SaveModelCallback()
-                        ])
-    learn.fit_one_cycle(2)
+                            #NeptuneCallback(neptune_run, 'experiment', save_best_model=False),
+                            # SaveModelCallback()
+                        ],
+                        pretrained=False)
+
+    learn.fit_one_cycle(1, cbs=[NeptuneCallback(neptune_run, 'experiment', save_best_model=False)])
+    learn.fine_tune(2)
+    learn.fit(2, cbs=[NeptuneCallback(neptune_run, 'experiment', save_best_model=False)])
 
 
 if __name__ == '__main__':

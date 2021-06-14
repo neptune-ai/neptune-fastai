@@ -28,9 +28,19 @@ def main():
     learn = tabular_learner(dls,
                             metrics=accuracy,
                             cbs=[
-                                NeptuneCallback(run=neptune_run, base_namespace='experiment', save_best_model=False)
+                                # NeptuneCallback(run=neptune_run,
+                                #                 base_namespace='experiment',
+                                #                 save_best_model=False,
+                                #                 save_model_freq=4),
+                                # SaveModelCallback(monitor='accuracy', at_end=True)
                             ])
-    learn.fit_one_cycle(3)
+    learn.fit_one_cycle(10, cbs=[
+        NeptuneCallback(run=neptune_run,
+                        base_namespace='experiment',
+                        save_best_model=True,
+                        save_model_freq=4),
+        SaveModelCallback(monitor='accuracy')
+    ])
 
 
 if __name__ == '__main__':
