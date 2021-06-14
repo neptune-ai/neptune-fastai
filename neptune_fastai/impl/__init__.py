@@ -117,7 +117,7 @@ class NeptuneCallback(Callback):
     def name(self) -> str:
         return 'neptune'
 
-    def after_create(self):
+    def before_fit(self):
         self.neptune_run[f'{self.base_namespace}/config'] = {
             'device': self._device,
             'batch_size': self._batch_size,
@@ -141,7 +141,6 @@ class NeptuneCallback(Callback):
         _log_model_architecture(self.neptune_run, self.base_namespace, self.learn)
         _log_dataset_metadata(self.neptune_run, self.base_namespace, self.learn)
 
-    def before_fit(self):
         self.neptune_run[f'{self.base_namespace}/config/optimizer/initial_hyperparameters'] = self._optimizer_hyperparams
 
         prefix = f'{self.base_namespace}/metrics/fit_{self.fit_index}'
@@ -155,7 +154,7 @@ class NeptuneCallback(Callback):
         if hasattr(self, 'save_model') and every_epoch and not self.save_model.every_epoch:
             warnings.warn(
                 'NeptuneCallback: SaveModelCallback is required to have every_epoch set to True when using '
-                'save_model_freq'
+                'save_model_freq. Model checkpoints will not be uploaded.'
             )
             self.save_model_freq = 0
 
