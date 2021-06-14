@@ -158,8 +158,9 @@ class NeptuneCallback(Callback):
             )
             self.save_model_freq = 0
 
-        elif every_epoch or self.save_best_model:
-            self.cbs.add(SaveModelCallback(every_epoch=every_epoch))
+        if not hasattr(self, 'save_model'):
+            if every_epoch or self.save_best_model:
+                self.add_cb(SaveModelCallback(every_epoch=every_epoch))
 
     def before_batch(self):
         target = 'training'
