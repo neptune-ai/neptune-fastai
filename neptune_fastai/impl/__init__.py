@@ -15,19 +15,20 @@
 #
 
 __all__ = [
-    'NeptuneCallback'
+    'NeptuneCallback',
+    'retrieve_fit_index'
 ]
 
 import time
 import hashlib
 import warnings
-from typing import List
+from typing import List, Optional, Dict
 
 from fastai.learner import Learner
 from fastai.callback.hook import total_params
-from fastai.callback.tracker import SaveModelCallback
 from fastai.basics import Callback, store_attr, join_path_file
 from fastai.torch_core import trainable_params, default_device
+from fastai.callback.tracker import SaveModelCallback, TrackerCallback
 
 try:
     # neptune-client=0.9.0 package structure
@@ -63,22 +64,27 @@ class NeptuneCallback(Callback):
 
         self.neptune_run = run
         self.best_model_epoch = 0
-        self.fit_index = _retrieve_fit_index(run, f'{base_namespace}/metrics/')
+        self.save_model_freq = save_model_freq
+        self.fit_index = retrieve_fit_index(run, f'{base_namespace}/metrics/')
 
         run[INTEGRATION_VERSION_KEY] = __version__
 
         store_attr('base_namespace,save_best_model,save_model_freq')
 
     @property
+    def name(self) -> str:
+        return 'neptune'
+
+    @property
     def _batch_size(self) -> int:
         return self.dls.bs
 
     @property
-    def _optimizer_name(self) -> str:
+    def _optimizer_name(self) -> Optional[str]:
         return self.opt_func.__name__
 
     @property
-    def _device(self):
+    def _device(self) -> str:
         return default_device() or getattr(self.dls, 'device', default_device())
 
     @property
@@ -99,25 +105,34 @@ class NeptuneCallback(Callback):
         return repr(self.loss_func.func)
 
     @property
-    def _optimizer_hyperparams(self):
-        if len(self.learn.opt.hypers) == 1:
-            return dict(self.learn.opt.hypers[0])
+    def _optimizer_hyperparams(self) -> Optional[dict]:
+        if hasattr(self, 'opt') and hasattr(self.opt, 'hypers'):
+            if len(self.opt.hypers) == 1:
+                return dict(self.learn.opt.hypers[0])
 
-        return {
-            f'group_layer_{layer}/{hyper}': value
-            for layer, opts in enumerate(self.learn.opt.hypers)
-            for hyper, value in opts.items()
-        }
+            return {
+                f'group_layer_{layer}/{hyper}': value
+                for layer, opts in enumerate(self.learn.opt.hypers)
+                for hyper, value in opts.items()
+            }
 
     @property
-    def _frozen_level(self):
+    def _frozen_level(self) -> int:
         return self.opt.frozen_idx if hasattr(self, 'opt') and hasattr(self.opt, 'frozen_idx') else 0
 
     @property
-    def name(self) -> str:
-        return 'neptune'
+    def _input_shape(self) -> Dict:
+        if hasattr(self, 'x') and hasattr(self, 'y'):
+            return {
+                'x': str(list(self.x[0].shape)),
+                'y': 1 if len(self.y[0].shape) == 0 else str(list(self.y[0].shape))
+            }
 
-    def before_fit(self):
+    @property
+    def _target(self) -> str:
+        return 'training' if self.learn.training else 'validation'
+
+    def _log_model_configuration(self):
         self.neptune_run[f'{self.base_namespace}/config'] = {
             'device': self._device,
             'batch_size': self._batch_size,
@@ -135,13 +150,47 @@ class NeptuneCallback(Callback):
             'criterion': self._optimizer_criterion,
             'optimizer': {
                 'name': self._optimizer_name,
+                'initial_hyperparameters': self._optimizer_hyperparams
             }
         }
 
+    def _check_for_save_model(self):
+        every_epoch = self.save_model_freq > 0
+
+        if not hasattr(self, 'save_model'):
+            if every_epoch or self.save_best_model:
+                save_model_cb = SaveModelCallback(every_epoch=every_epoch)
+                self.learn.add_cb(save_model_cb)
+
+    def after_create(self):
+        self._check_for_save_model()
+
+    def before_fit(self):
+        every_epoch = self.save_model_freq > 0
+
+        if hasattr(self, 'save_model') and every_epoch and not self.save_model.every_epoch:
+            warnings.warn(
+                'NeptuneCallback: SaveModelCallback is required to have every_epoch set to True when using '
+                'save_model_freq. Model checkpoints will not be uploaded.'
+            )
+            self.save_model_freq = 0
+
+        if not hasattr(self, 'save_model'):
+            if every_epoch or self.save_best_model:
+                warnings.warn(
+                    'NeptuneCallback: SaveModelCallback is necessary for uploading model checkpoints.'
+                )
+
+                if every_epoch:
+                    self.save_model_freq = 0
+
+                if self.save_best_model:
+                    self.save_model_freq = False
+
+        self._log_model_configuration()
+
         _log_model_architecture(self.neptune_run, self.base_namespace, self.learn)
         _log_dataset_metadata(self.neptune_run, self.base_namespace, self.learn)
-
-        self.neptune_run[f'{self.base_namespace}/config/optimizer/initial_hyperparameters'] = self._optimizer_hyperparams
 
         prefix = f'{self.base_namespace}/metrics/fit_{self.fit_index}'
 
@@ -150,49 +199,25 @@ class NeptuneCallback(Callback):
         if self._frozen_level > 0:
             self.neptune_run[f'{prefix}/frozen_level'] = self._frozen_level
 
-        every_epoch = self.save_model_freq > 0
-        if hasattr(self, 'save_model') and every_epoch and not self.save_model.every_epoch:
-            warnings.warn(
-                'NeptuneCallback: SaveModelCallback is required to have every_epoch set to True when using '
-                'save_model_freq. Model checkpoints will not be uploaded.'
-            )
-            self.save_model_freq = 0
-
-        elif every_epoch or self.save_best_model:
-            self.cbs.add(SaveModelCallback(every_epoch=every_epoch))
-
     def before_batch(self):
-        target = 'training'
-        if not self.learn.training:
-            target = 'validation'
-
         if self.learn.iter == 0:
-            self.neptune_run[f'{self.base_namespace}/metrics/fit_{self.fit_index}/{target}/n_iter'] = self.n_iter
+            self.neptune_run[
+                f'{self.base_namespace}/metrics/fit_{self.fit_index}/{self._target}/batch_counter'
+            ] = self.n_iter
 
         if self.learn.train_iter == 1:
-            self.neptune_run[f'{self.base_namespace}/config/input_shape'] = {
-                'x': str(list(self.x[0].shape)),
-                'y': 1 if len(self.y[0].shape) == 0 else str(list(self.y[0].shape))
-            }
+            self.neptune_run[f'{self.base_namespace}/config/input_shape'] = self._input_shape
 
     def after_batch(self):
-        target = 'training'
-        if not self.learn.training:
-            target = 'validation'
+        prefix = f'{self.base_namespace}/metrics/fit_{self.fit_index}/{self._target}/batch'
 
-        prefix = f'{self.base_namespace}/metrics/fit_{self.fit_index}/{target}/batch'
-
-        self.neptune_run[f'{prefix}/loss'].log(
-            value=self.learn.loss.clone()
-        )
+        self.neptune_run[f'{prefix}/loss'].log(value=self.learn.loss.clone())
 
         if hasattr(self, 'smooth_loss'):
-            self.neptune_run[f'{prefix}/smooth_loss'].log(
-                value=self.learn.smooth_loss.clone()
-            )
+            self.neptune_run[f'{prefix}/smooth_loss'].log(value=self.learn.smooth_loss.clone())
 
     def after_train(self):
-        prefix = f'{self.base_namespace}/metrics/fit_{self.fit_index}/training/epoch'
+        prefix = f'{self.base_namespace}/metrics/fit_{self.fit_index}/training/loader'
 
         for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
             if metric_name not in {'epoch', 'time'}:
@@ -203,12 +228,12 @@ class NeptuneCallback(Callback):
         )
 
         _log_optimizer_hyperparams(self.neptune_run,
-                                   f'{prefix}/optimizer_hyperparameters',
+                                   f'{self.base_namespace}/metrics/fit_{self.fit_index}/optimizer_hyperparameters',
                                    self._optimizer_hyperparams,
                                    self.n_epoch)
 
     def after_validate(self):
-        prefix = f'{self.base_namespace}/metrics/fit_{self.fit_index}/validation/epoch'
+        prefix = f'{self.base_namespace}/metrics/fit_{self.fit_index}/validation/loader'
 
         for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
             if metric_name not in {'epoch', 'time', 'train_loss'}:
@@ -225,11 +250,13 @@ class NeptuneCallback(Callback):
                     path = join_path_file(f'{self.learn.save_model.fname}_{self.learn.save_model.epoch}',
                                           self.learn.path / self.learn.model_dir,
                                           ext='.pth')
-                    prefix = f'{self.base_namespace}/io_files/artifacts/model_checkpoints/fit_{self.fit_index}/epoch_{self.learn.epoch}'
+                    prefix = f'{self.base_namespace}/io_files/artifacts/model_checkpoints/fit_{self.fit_index}/' \
+                             f'epoch_{self.learn.epoch}'
                     self.neptune_run[prefix].upload(str(path))
 
             if self.save_best_model:
-                super(type(self.save_model), self.save_model).after_epoch()
+                # Enforce tracker to check for new best model
+                TrackerCallback.after_epoch(self.save_model)
 
                 if hasattr(self.save_model, 'new_best') and self.save_model.new_best:
                     self.best_model_epoch = self.epoch
@@ -237,13 +264,13 @@ class NeptuneCallback(Callback):
     def after_fit(self):
         if self.save_best_model:
             if hasattr(self, 'save_model') and hasattr(self.save_model, 'every_epoch') and self.save_model.every_epoch:
-                path = join_path_file(f'{self.learn.save_model.fname}_{self.best_model_epoch}',
-                                      self.learn.path / self.learn.model_dir,
-                                      ext='.pth')
+                filename = f'{self.learn.save_model.fname}_{self.best_model_epoch}'
             else:
-                path = join_path_file(f'{self.learn.save_model.fname}', self.learn.path / self.learn.model_dir, ext='.pth')
+                filename = self.learn.save_model.fname
 
+            path = join_path_file(filename, self.learn.path / self.learn.model_dir, ext='.pth')
             prefix = f'{self.base_namespace}/io_files/artifacts/model_checkpoints/fit_{self.fit_index}/best'
+
             self.neptune_run[prefix].upload(str(path))
 
         self.fit_index += 1
@@ -253,10 +280,10 @@ def _log_model_architecture(run: neptune.Run, base_namespace: str, learn: Learne
     if hasattr(learn, 'arch'):
         run[f'{base_namespace}/config/model/architecture_name'] = getattr(learn.arch, '__name__', '')
 
-    model = File.from_content(repr(learn.model))
+    model_architecture = File.from_content(repr(learn.model))
 
-    run[f'{base_namespace}/config/model/architecture'].upload(model)
-    run[f'{base_namespace}/io_files/artifacts/model_architecture'].upload(model)
+    run[f'{base_namespace}/config/model/architecture'].upload(model_architecture)
+    run[f'{base_namespace}/io_files/artifacts/model_architecture'].upload(model_architecture)
 
 
 def _log_dataset_metadata(run: neptune.Run, base_namespace: str, learn: Learner):
@@ -276,7 +303,7 @@ def _log_or_assign_metric(run: neptune.Run, number_of_epochs: int, metric: str, 
         run[metric] = value
 
 
-def _retrieve_fit_index(run: neptune.Run, path: str):
+def retrieve_fit_index(run: neptune.Run, path: str) -> int:
     return len(run.get_attribute(path) or [])
 
 
