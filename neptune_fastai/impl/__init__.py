@@ -53,10 +53,12 @@ class NeptuneCallback(TrackerCallback):
     def __init__(self,
                  run: neptune.Run,
                  base_namespace: str = '',
+                 fname: str = 'neptune_model',
                  monitor: Union[str, Callable] = 'valid_loss',
                  comp: Optional[Callable] = None,
-                 min_delta: float = 0.,
+                 min_delta: float = 0.0,
                  reset_on_fit: bool = True,
+                 cleanup_after_fit: bool = True,
                  with_opt: bool = False,
                  save_best_model: bool = True,
                  save_model_freq: int = 0):
@@ -64,8 +66,10 @@ class NeptuneCallback(TrackerCallback):
 
         verify_type('run', run, neptune.Run)
         verify_type('base_namespace', base_namespace, str)
+        verify_type('fname', fname, str)
         verify_type('min_delta', min_delta, float)
         verify_type('reset_on_fit', reset_on_fit, bool)
+        verify_type('cleanup_after_fit', cleanup_after_fit, bool)
         verify_type('with_opt', with_opt, bool)
         verify_type('save_best_model', save_best_model, bool)
         verify_type('save_model_freq', save_model_freq, int)
@@ -77,15 +81,15 @@ class NeptuneCallback(TrackerCallback):
 
         run[INTEGRATION_VERSION_KEY] = __version__
 
-        store_attr('base_namespace,with_opt,save_best_model,save_model_freq')
+        store_attr('base_namespace,fname,cleanup_after_fit,with_opt,save_best_model,save_model_freq')
 
     @property
     def name(self) -> str:
         return 'neptune'
 
     @property
-    def fname(self) -> str:
-        return f'neptune_model_fit_{self.fit_index}'
+    def _filename(self) -> str:
+        return f'{self.fname}_fit_{self.fit_index}'
 
     @property
     def _batch_size(self) -> int:
@@ -242,7 +246,7 @@ class NeptuneCallback(TrackerCallback):
 
     def after_epoch(self):
         if self.save_model_freq > 0 and self.epoch % self.save_model_freq == 0:
-            path = self._save(f'{self.fname}_epoch_{self.epoch}')
+            path = self._save(f'{self._filename}_epoch_{self.epoch}')
             prefix = f'{self.base_namespace}/io_files/artifacts/model_checkpoints/fit_{self.fit_index}/' \
                      f'epoch_{self.epoch}'
             self.neptune_run[prefix].upload(path)
@@ -252,19 +256,22 @@ class NeptuneCallback(TrackerCallback):
             super().after_epoch()
 
             if self.new_best:
-                self._save(self.fname)
+                self._save(self._filename)
 
     def after_fit(self):
         if self.save_best_model:
-            path = join_path_file(self.fname,
+            path = join_path_file(self._filename,
                                   self.learn.path / self.learn.model_dir,
                                   ext='.pth')
             prefix = f'{self.base_namespace}/io_files/artifacts/model_checkpoints/fit_{self.fit_index}/best'
 
             self.neptune_run[prefix].upload(str(path))
 
-        self.neptune_run.sync()
-        self._clean_saved_files()
+        self.neptune_run.sync(wait=True)
+
+        if self.cleanup_after_fit:
+            self._clean_saved_files()
+
         self.fit_index += 1
 
 

@@ -31,12 +31,7 @@ dls = TabularDataLoaders.from_csv(path / 'adult.csv',
 
 learn = tabular_learner(dls,
                         metrics=accuracy)
-learn.fit_one_cycle(10,
-                    cbs=[
-                            NeptuneCallback(run=neptune_run,
-                                            base_namespace='experiment',
-                                            save_best_model=True,
-                                            save_model_freq=4),
-                            SaveModelCallback(monitor='accuracy', every_epoch=True)
-                        ])
+learn.fit_one_cycle(10, cbs=[NeptuneCallback(run=neptune_run,
+                                             base_namespace='experiment',
+                                             save_model_freq=4)])
 ```
