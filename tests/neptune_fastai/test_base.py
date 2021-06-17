@@ -15,7 +15,6 @@
 #
 from fastai.basics import accuracy
 from fastai.tabular.all import tabular_learner
-from fastai.callback.tracker import SaveModelCallback
 
 from neptune_fastai.impl import NeptuneCallback
 

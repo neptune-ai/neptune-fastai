@@ -189,9 +189,9 @@ class NeptuneCallback(TrackerCallback):
     def _check_save_model(self):
         if not self._warned_save_model and hasattr(self, 'save_model') and\
                 (self.save_best_model or self.save_model_freq > 0):
-            warnings.warn(f'NeptuneCallback: Extra model weight files will be stored temporarily in your machine '
-                          f'addition to the ones from your SaveModelCallback. To avoid running out of storage remove '
-                          f'SaveModelCallback.')
+            warnings.warn('NeptuneCallback: Extra model weight files will be stored temporarily in your machine '
+                          'addition to the ones from your SaveModelCallback. To avoid running out of storage remove '
+                          'SaveModelCallback.')
             self._warned_save_model = True
 
     def before_fit(self):
