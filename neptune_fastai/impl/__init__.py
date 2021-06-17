@@ -75,7 +75,8 @@ class NeptuneCallback(TrackerCallback):
         verify_type('save_model_freq', save_model_freq, int)
 
         self.neptune_run = run
-        self.saved_files = set()
+        self._saved_files = set()
+        self._warned_save_model = False
         self.save_model_freq = save_model_freq
         self.fit_index = retrieve_fit_index(run, f'{base_namespace}/metrics/')
 
@@ -174,20 +175,29 @@ class NeptuneCallback(TrackerCallback):
         self.learn.save(filename, with_opt=self.with_opt)
 
         path = str(join_path_file(filename, self.learn.path / self.learn.model_dir, ext='.pth'))
-        self.saved_files.add(path)
+        self._saved_files.add(path)
 
         return path
 
     def _clean_saved_files(self):
-        for saved_file in self.saved_files:
+        for saved_file in self._saved_files:
             try:
                 os.remove(saved_file)
             except FileNotFoundError:
                 pass
 
+    def _check_save_model(self):
+        if not self._warned_save_model and hasattr(self, 'save_model') and\
+                (self.save_best_model or self.save_model_freq > 0):
+            warnings.warn(f'NeptuneCallback: Extra model weight files will be stored temporarily in your machine '
+                          f'addition to the ones from your SaveModelCallback. To avoid running out of storage remove '
+                          f'SaveModelCallback.')
+            self._warned_save_model = True
+
     def before_fit(self):
         super().before_fit()
 
+        self._check_save_model()
         self._log_model_configuration()
 
         _log_model_architecture(self.neptune_run, self.base_namespace, self.learn)
