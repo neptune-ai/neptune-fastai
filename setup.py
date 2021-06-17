@@ -25,7 +25,7 @@ def main():
         'tox==3.6.1',
     ]
 
-    base_libs = ['neptune-client>=0.9.18', 'fastai>=2.0.0']
+    base_libs = ['neptune-client>=0.9.16', 'fastai>=2.0.0']
 
     version = None
     if os.path.exists('PKG-INFO'):

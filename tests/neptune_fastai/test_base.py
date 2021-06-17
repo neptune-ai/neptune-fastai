@@ -15,6 +15,7 @@
 #
 from fastai.basics import accuracy
 from fastai.tabular.all import tabular_learner
+from fastai.callback.tracker import SaveModelCallback
 
 from neptune_fastai.impl import NeptuneCallback
 
@@ -183,13 +184,15 @@ class TestBase:
 
     def test_saving_from_method(self, run, dataset):
         learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10])
-        learn.fit_one_cycle(1, cbs=[NeptuneCallback(run=run, save_best_model=True)])
+        learn.fit_one_cycle(1, cbs=[SaveModelCallback(), NeptuneCallback(run=run, save_best_model=True)])
 
         learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10])
-        learn.fit_one_cycle(2, cbs=[NeptuneCallback(run=run, save_best_model=False, save_model_freq=2)])
+        learn.fit_one_cycle(2, cbs=[SaveModelCallback(every_epoch=True),
+                                    NeptuneCallback(run=run, save_best_model=False, save_model_freq=2)])
 
         learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10])
-        learn.fit_one_cycle(2, cbs=[NeptuneCallback(run=run, save_best_model=True, save_model_freq=2)])
+        learn.fit_one_cycle(2, cbs=[SaveModelCallback(every_epoch=True),
+                                    NeptuneCallback(run=run, save_best_model=True, save_model_freq=2)])
 
         run.sync()
 
