@@ -47,8 +47,7 @@ def main():
                                 NeptuneCallback(run=neptune_run,
                                                 base_namespace='experiment',
                                                 save_best_model=True,
-                                                save_model_freq=4),
-                                SaveModelCallback(monitor='accuracy', every_epoch=True)
+                                                save_model_freq=2)
                             ])
 
 

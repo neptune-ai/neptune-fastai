@@ -42,7 +42,7 @@ def main():
     learn = cnn_learner(dls,
                         resnet34,
                         metrics=error_rate,
-                        cbs=[NeptuneCallback(neptune_run, 'experiment')],
+                        cbs=[NeptuneCallback(neptune_run, 'experiment', save_best_model=False)],
                         pretrained=False)
 
     learn.fit_one_cycle(1)
