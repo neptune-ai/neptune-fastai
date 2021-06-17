@@ -46,8 +46,7 @@ def main():
                         cbs=[
                                 NeptuneCallback(run=neptune_run,
                                                 base_namespace='experiment',
-                                                save_best_model=True,
-                                                save_model_freq=2)
+                                                save_model_freq=4)
                             ])
 
 
