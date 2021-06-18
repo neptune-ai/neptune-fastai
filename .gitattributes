@@ -1,1 +1,1 @@
-neptune_integration_template/_version.py export-subst  # TODO: Update path
+neptune_fastai/_version.py export-subst
