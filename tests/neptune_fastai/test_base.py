@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from pytest import fail
+
 from fastai.basics import accuracy
 from fastai.tabular.all import tabular_learner
 from fastai.callback.tracker import SaveModelCallback
 
 from neptune_fastai.impl import NeptuneCallback
-
-from pytest import fail
 
 try:
     # neptune-client=0.9.0 package structure
