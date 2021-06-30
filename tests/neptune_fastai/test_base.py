@@ -210,7 +210,7 @@ class TestBase:
             learn = tabular_learner(dataset,
                                     metrics=accuracy,
                                     layers=[10, 10],
-                                    cbs=[NeptuneCallback(run=run, save_best_model=True)])
+                                    cbs=[NeptuneCallback(run=run), SaveModelCallback()])
             learn.fit_one_cycle(1)
         except AttributeError as exception:
             fail(exception)
@@ -218,6 +218,6 @@ class TestBase:
     def test_without_save_model_method(self, run, dataset):
         try:
             learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10])
-            learn.fit_one_cycle(1, cbs=[NeptuneCallback(run=run, save_best_model=True)])
+            learn.fit_one_cycle(1, cbs=[NeptuneCallback(run=run), SaveModelCallback()])
         except AttributeError as exception:
             fail(exception)
