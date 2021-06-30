@@ -44,12 +44,10 @@ def main():
                             metrics=accuracy)
     learn.fit_one_cycle(10,
                         cbs=[
-                                NeptuneCallback(run=neptune_run,
-                                                base_namespace='experiment',
-                                                save_best_model=True,
-                                                save_model_freq=4),
-                                SaveModelCallback(monitor='accuracy', every_epoch=True)
-                            ])
+                            NeptuneCallback(run=neptune_run,
+                                            base_namespace='experiment'),
+                            SaveModelCallback(monitor='accuracy')
+                        ])
 
 
 if __name__ == '__main__':
