@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from pytest import fail
+
 from fastai.basics import accuracy
 from fastai.tabular.all import tabular_learner
 from fastai.callback.tracker import SaveModelCallback
@@ -223,3 +225,20 @@ class TestBase:
         assert 'best' in structure['io_files']['artifacts']['model_checkpoints']['fit_2']
         assert 'epoch_0' in structure['io_files']['artifacts']['model_checkpoints']['fit_2']
         assert len(structure['io_files']['artifacts']['model_checkpoints']['fit_2']) == 2
+
+    def test_without_save_model_constr(self, run, dataset):
+        try:
+            learn = tabular_learner(dataset,
+                                    metrics=accuracy,
+                                    layers=[10, 10],
+                                    cbs=[NeptuneCallback(run=run, save_best_model=True)])
+            learn.fit_one_cycle(1)
+        except AttributeError as exception:
+            fail(exception)
+
+    def test_without_save_model_method(self, run, dataset):
+        try:
+            learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10])
+            learn.fit_one_cycle(1, cbs=[NeptuneCallback(run=run, save_best_model=True)])
+        except AttributeError as exception:
+            fail(exception)

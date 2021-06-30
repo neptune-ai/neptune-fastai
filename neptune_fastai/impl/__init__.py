@@ -262,8 +262,8 @@ class NeptuneCallback(Callback):
                     self.best_model_epoch = self.epoch
 
     def after_fit(self):
-        if self.save_best_model:
-            if hasattr(self, 'save_model') and hasattr(self.save_model, 'every_epoch') and self.save_model.every_epoch:
+        if self.save_best_model and hasattr(self, 'save_model'):
+            if hasattr(self.save_model, 'every_epoch') and self.save_model.every_epoch:
                 filename = f'{self.learn.save_model.fname}_{self.best_model_epoch}'
             else:
                 filename = self.learn.save_model.fname
