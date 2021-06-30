@@ -35,7 +35,7 @@ class TestBase:
     def test_basename(self, run, dataset):
         neptune_callback = NeptuneCallback(run=run,
                                            base_namespace='experiment',
-                                           save_best_model=False)
+                                           upload_saved_models=None)
 
         learn = tabular_learner(dataset, metrics=accuracy, cbs=[neptune_callback])
         learn.fit_one_cycle(1)
@@ -55,7 +55,7 @@ class TestBase:
     def test_basename_fit_callback(self, run, dataset):
         neptune_callback = NeptuneCallback(run=run,
                                            base_namespace='experiment',
-                                           save_best_model=False)
+                                           upload_saved_models=None)
 
         learn = tabular_learner(dataset, layers=[10, 10], metrics=accuracy)
         learn.fit_one_cycle(1, cbs=[neptune_callback])
@@ -75,7 +75,7 @@ class TestBase:
     def test_multiple_fits(self, run, dataset):
         neptune_callback = NeptuneCallback(run=run,
                                            base_namespace='experiment',
-                                           save_best_model=False)
+                                           upload_saved_models=None)
 
         learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10], cbs=[neptune_callback])
         learn.fit_one_cycle(1)
@@ -96,7 +96,7 @@ class TestBase:
 
     def test_frozen_fits(self, run, dataset):
         neptune_callback = NeptuneCallback(run=run,
-                                           save_best_model=False)
+                                           upload_saved_models=None)
 
         learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10], cbs=[neptune_callback])
         learn.fit_one_cycle(1)
@@ -120,7 +120,7 @@ class TestBase:
         assert 'frozen_level' in structure['metrics']['fit_1']
 
     def test_optimizer_hyperparams(self, run, dataset):
-        neptune_callback = NeptuneCallback(run=run, save_best_model=False)
+        neptune_callback = NeptuneCallback(run=run, upload_saved_models=None)
 
         learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10], cbs=[neptune_callback])
         learn.fit_one_cycle(1)
@@ -143,15 +143,11 @@ class TestBase:
 
     def test_saving_from_constructor(self, run, dataset):
         learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10],
-                                cbs=[NeptuneCallback(run=run, save_best_model=True)])
+                                cbs=[SaveModelCallback(), NeptuneCallback(run=run)])
         learn.fit_one_cycle(1)
 
         learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10],
-                                cbs=[NeptuneCallback(run=run, save_best_model=False, save_model_freq=2)])
-        learn.fit_one_cycle(2)
-
-        learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10],
-                                cbs=[NeptuneCallback(run=run, save_best_model=True, save_model_freq=2)])
+                                cbs=[SaveModelCallback(every_epoch=2), NeptuneCallback(run=run)])
         learn.fit_one_cycle(2)
 
         run.sync()
@@ -164,37 +160,26 @@ class TestBase:
 
         assert 'fit_0' in structure['metrics']
         assert 'fit_1' in structure['metrics']
-        assert 'fit_2' in structure['metrics']
-        assert len(structure['metrics']) == 3
+        assert len(structure['metrics']) == 2
 
         assert 'artifacts' in structure['io_files']
         assert 'model_checkpoints' in structure['io_files']['artifacts']
         assert 'fit_0' in structure['io_files']['artifacts']['model_checkpoints']
         assert 'fit_1' in structure['io_files']['artifacts']['model_checkpoints']
-        assert 'fit_2' in structure['io_files']['artifacts']['model_checkpoints']
-        assert len(structure['io_files']['artifacts']['model_checkpoints']) == 3
+        assert len(structure['io_files']['artifacts']['model_checkpoints']) == 2
 
-        assert 'best' in structure['io_files']['artifacts']['model_checkpoints']['fit_0']
+        assert 'model' in structure['io_files']['artifacts']['model_checkpoints']['fit_0']
         assert len(structure['io_files']['artifacts']['model_checkpoints']['fit_0']) == 1
 
         assert 'epoch_0' in structure['io_files']['artifacts']['model_checkpoints']['fit_1']
         assert len(structure['io_files']['artifacts']['model_checkpoints']['fit_1']) == 1
-
-        assert 'best' in structure['io_files']['artifacts']['model_checkpoints']['fit_2']
-        assert 'epoch_0' in structure['io_files']['artifacts']['model_checkpoints']['fit_2']
-        assert len(structure['io_files']['artifacts']['model_checkpoints']['fit_2']) == 2
 
     def test_saving_from_method(self, run, dataset):
         learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10])
-        learn.fit_one_cycle(1, cbs=[SaveModelCallback(), NeptuneCallback(run=run, save_best_model=True)])
+        learn.fit_one_cycle(1, cbs=[SaveModelCallback(), NeptuneCallback(run=run)])
 
         learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10])
-        learn.fit_one_cycle(2, cbs=[SaveModelCallback(every_epoch=True),
-                                    NeptuneCallback(run=run, save_best_model=False, save_model_freq=2)])
-
-        learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10])
-        learn.fit_one_cycle(2, cbs=[SaveModelCallback(every_epoch=True),
-                                    NeptuneCallback(run=run, save_best_model=True, save_model_freq=2)])
+        learn.fit_one_cycle(2, cbs=[SaveModelCallback(every_epoch=2), NeptuneCallback(run=run)])
 
         run.sync()
 
@@ -206,25 +191,19 @@ class TestBase:
 
         assert 'fit_0' in structure['metrics']
         assert 'fit_1' in structure['metrics']
-        assert 'fit_2' in structure['metrics']
-        assert len(structure['metrics']) == 3
+        assert len(structure['metrics']) == 2
 
         assert 'artifacts' in structure['io_files']
         assert 'model_checkpoints' in structure['io_files']['artifacts']
         assert 'fit_0' in structure['io_files']['artifacts']['model_checkpoints']
         assert 'fit_1' in structure['io_files']['artifacts']['model_checkpoints']
-        assert 'fit_2' in structure['io_files']['artifacts']['model_checkpoints']
-        assert len(structure['io_files']['artifacts']['model_checkpoints']) == 3
+        assert len(structure['io_files']['artifacts']['model_checkpoints']) == 2
 
-        assert 'best' in structure['io_files']['artifacts']['model_checkpoints']['fit_0']
+        assert 'model' in structure['io_files']['artifacts']['model_checkpoints']['fit_0']
         assert len(structure['io_files']['artifacts']['model_checkpoints']['fit_0']) == 1
 
         assert 'epoch_0' in structure['io_files']['artifacts']['model_checkpoints']['fit_1']
         assert len(structure['io_files']['artifacts']['model_checkpoints']['fit_1']) == 1
-
-        assert 'best' in structure['io_files']['artifacts']['model_checkpoints']['fit_2']
-        assert 'epoch_0' in structure['io_files']['artifacts']['model_checkpoints']['fit_2']
-        assert len(structure['io_files']['artifacts']['model_checkpoints']['fit_2']) == 2
 
     def test_without_save_model_constr(self, run, dataset):
         try:

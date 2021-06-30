@@ -40,15 +40,11 @@ def main():
                                       cont_names=['age', 'fnlwgt', 'education-num'],
                                       procs=[Categorify, FillMissing, Normalize])
 
-    learn = tabular_learner(dls,
-                            metrics=accuracy)
-    learn.fit_one_cycle(10,
+    learn = tabular_learner(dls, metrics=accuracy)
+    learn.fit_one_cycle(4,
                         cbs=[
-                                NeptuneCallback(run=neptune_run,
-                                                base_namespace='experiment',
-                                                save_best_model=True,
-                                                save_model_freq=4),
-                                SaveModelCallback(monitor='accuracy', every_epoch=True)
+                                NeptuneCallback(run=neptune_run, base_namespace='experiment'),
+                                SaveModelCallback(monitor='accuracy', every_epoch=2, at_end=True)
                             ])
 
 
