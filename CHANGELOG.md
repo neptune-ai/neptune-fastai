@@ -1,3 +1,8 @@
+## neptune-fastai 0.10.1
+
+### Features
+- Mechanism to prevent using legacy Experiments in new-API integrations ([#17](https://github.com/neptune-ai/neptune-fastai/pull/17))
+
 ## neptune-fastai 0.10.0
 
 ### Breaking changes
