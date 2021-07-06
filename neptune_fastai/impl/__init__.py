@@ -31,14 +31,16 @@ from fastai.torch_core import trainable_params, default_device
 from fastai.callback.tracker import SaveModelCallback
 
 try:
-    # neptune-client=0.9.0 package structure
+    # neptune-client=0.9.0+ package structure
     import neptune.new as neptune
     from neptune.new.internal.utils import verify_type
+    from neptune.new.internal.utils.compatibility import expect_not_an_experiment
     from neptune.new.types import File
 except ImportError:
-    # neptune-client=1.0.0 package structure
+    # neptune-client>=1.0.0 package structure
     import neptune
     from neptune.internal.utils import verify_type
+    from neptune.internal.utils.compatibility import expect_not_an_experiment
     from neptune.types import File
 
 from neptune_fastai import __version__
@@ -56,6 +58,7 @@ class NeptuneCallback(Callback):
                  **kwargs):
         super().__init__(**kwargs)
 
+        expect_not_an_experiment(run)
         verify_type('run', run, neptune.Run)
         verify_type('base_namespace', base_namespace, str)
         verify_type('upload_saved_models', upload_saved_models, (str, type(None)))
