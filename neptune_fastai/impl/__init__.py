@@ -61,10 +61,13 @@ class NeptuneCallback(Callback):
         For examples when you call ``learner.fit(n)`` the first time it will create 
         a folder named fit_0 under the folder metrics that contains optimizer hyperparameters, batch and loader-level metrics.
         
-        --> metrics
-            ---> fit_0
-            ---> ...
-            ---> fit_n
+        metrics
+            |--> fit_0
+                |--> batch
+                |--> loader
+                |--> optimizer hyperparameters
+            |--> ...
+            |--> fit_n
 
 
         Note:
