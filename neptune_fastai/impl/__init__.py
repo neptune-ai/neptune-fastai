@@ -59,8 +59,8 @@ class NeptuneCallback(Callback):
 
         Metrics and losses are logged separately for every ``learner.fit()`` call.
         For examples when you call ``learner.fit(n)`` the first time it will create 
-        a folder named fit_0 under the folder metrics that contains optimizer hyperparameters, batch and loader-level metrics.
-        
+        a folder named fit_0 under the folder metrics that contains optimizer hyperparameters,
+        batch and loader-level metrics.  
         metrics
             |--> fit_0
                 |--> batch
@@ -69,11 +69,9 @@ class NeptuneCallback(Callback):
             |--> ...
             |--> fit_n
 
-
         Note:
             You can use public ``api_token="ANONYMOUS"`` and set ``project="common/fastai-integration"``
             for testing without registration.
-
 
         Args:
             run (:obj: `neptune.new.run.Run`): Neptune run object
@@ -86,7 +84,6 @@ class NeptuneCallback(Callback):
             When using `'last'`, it uploads the last model checkpoint created by `SaveModelCallback()`.
             Defaults to `'all'`. 
             
-
         Examples: 
             For more examples visit `example scripts`_.
 
@@ -108,35 +105,33 @@ class NeptuneCallback(Callback):
 
                 # 1. Log a single training phase
                 learn = cnn_learner(dls, resnet18, metrics=accuracy)
-                learn.fit_one_cycle(1, cbs=[NeptuneCallback(run, "experiment_1")])
+                learn.fit_one_cycle(1, cbs=[NeptuneCallback(run=run, base_namespace="experiment_1")])
                 learn.fit_one_cycle(2)
 
                 # 2. Log all training phases of the learner
-                learn = cnn_learner(dls, resnet18, cbs=[NeptuneCallback(run, "experiment_2")])
+                learn = cnn_learner(dls, resnet18, cbs=[NeptuneCallback(run=run, base_namespace="experiment_2")])
                 learn.fit_one_cycle(1)
                 learn.fit_one_cycle(2)
 
-
                 # Log model weights
 
-                # Add SaveModelCallback 
+                # Add SaveModelCallback() 
 
                 # 1. Log Every N epochs
                 n = 2
                 learn = cnn_learner(
                     dls, resnet18, metrics=accuracy,
                     cbs=[SaveModelCallback(every_epoch=n),
-                        NeptuneCallback(run, 'experiment_3', upload_saved_models='all')])
+                        NeptuneCallback(run=run, base_namespace='experiment_3', upload_saved_models='all')])
 
                 learn.fit_one_cycle(5)
 
                 # 2. Best Model
                 learn = cnn_learner(
                     dls, resnet18, metrics=accuracy,
-                    cbs=[SaveModelCallback(), NeptuneCallback(run, 'experiment_4')])
+                    cbs=[SaveModelCallback(), NeptuneCallback(run=run, base_namespace='experiment_4')])
 
                 learn.fit_one_cycle(5)
-
 
                 # Log images
                 batch = dls.one_batch()
@@ -167,8 +162,7 @@ class NeptuneCallback(Callback):
                  run: neptune.Run,
                  base_namespace: str = '',
                  upload_saved_models: Optional[str] = 'all',
-                 **kwargs):
-                 
+                 **kwargs):             
         super().__init__(**kwargs)
 
         expect_not_an_experiment(run)
