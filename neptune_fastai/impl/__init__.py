@@ -78,8 +78,10 @@ class NeptuneCallback(Callback):
                 Learn more in `run docs`_.
             base_namespace (:obj: `str`, optional): Root namespace. All metdata will be logged inside.
             Defaults is empty string. In this case metadata is logged without common "base_namespace"
-            upload_saved_models (:obj: `str`, optional): Upload model selector. Can be either `all` or `last`.
-            Defaults to `all`. In this case it uploads all models created by SaveModelCallback.
+            upload_saved_models (:obj: `str`, optional):  `'all'` or `'last'`.
+            When using `'all'`, it uploads all model checkpoints created by `SaveModelCallback()`.
+            When using `'last'`, it uploads the last model checkpoint created by `SaveModelCallback()`.
+            Defaults to `'all'`. 
             
 
         Examples: 
