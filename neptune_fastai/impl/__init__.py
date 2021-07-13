@@ -49,6 +49,7 @@ INTEGRATION_VERSION_KEY = 'source_code/integrations/neptune-fastai'
 
 
 class NeptuneCallback(Callback):
+    # pylint: disable=trailing-whitespace
     """Neptune callback for logging metadata during fastai training loop
 
         See guide with example in the `Neptune-fastai docs`_.
