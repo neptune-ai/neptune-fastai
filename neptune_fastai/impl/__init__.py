@@ -49,13 +49,121 @@ INTEGRATION_VERSION_KEY = 'source_code/integrations/neptune-fastai'
 
 
 class NeptuneCallback(Callback):
+    # pylint: disable=trailing-whitespace
+    """Neptune callback for logging metadata during fastai training loop
+
+        See guide with example in the `Neptune-fastai docs`_.
+
+        This callback logs paramaters, metrics, losses, model configuration, 
+        optimizer configuration and info about the dataset:
+        path, number of samples and hash value.
+
+        Metrics and losses are logged separately for every ``learner.fit()`` call.
+        For examples when you call ``learner.fit(n)`` the first time it will create 
+        a folder named fit_0 under the folder metrics that contains optimizer hyperparameters,
+        batch and loader-level metrics.  
+        metrics
+            |--> fit_0
+                |--> batch
+                |--> loader
+                |--> optimizer hyperparameters
+            |--> ...
+            |--> fit_n
+
+        Note:
+            You can use public ``api_token="ANONYMOUS"`` and set ``project="common/fastai-integration"``
+            for testing without registration.
+
+        Args:
+            run (:obj: `neptune.new.run.Run`): Neptune run object
+                A run in Neptune is a representation of all metadata that you log to Neptune.
+                Learn more in `run docs`_.
+            base_namespace (:obj: `str`, optional): Root namespace. All metdata will be logged inside.
+            Defaults is empty string. In this case metadata is logged without common "base_namespace"
+            upload_saved_models (:obj: `str`, optional):  `'all'` or `'last'`.
+            When using `'all'`, it uploads all model checkpoints created by `SaveModelCallback()`.
+            When using `'last'`, it uploads the last model checkpoint created by `SaveModelCallback()`.
+            Defaults to `'all'`. 
+            
+        Examples: 
+            For more examples visit `example scripts`_.
+
+            Full script that does model training and logging of the metadata.
+                import fastai
+                from neptune.new.integrations.fastai import NeptuneCallback
+                from fastai.vision.all import *
+                import neptune.new as neptune
+                from neptune.new.types import File
+
+                run = neptune.init(
+                    project="common/fastai-integration", api_token="ANONYMOUS", tags="more options"
+                )
+
+                path = untar_data(URLs.MNIST_TINY)
+                dls = ImageDataLoaders.from_csv(path)
+
+                # Single & Multi phase logging
+
+                # 1. Log a single training phase
+                learn = cnn_learner(dls, resnet18, metrics=accuracy)
+                learn.fit_one_cycle(1, cbs=[NeptuneCallback(run=run, base_namespace="experiment_1")])
+                learn.fit_one_cycle(2)
+
+                # 2. Log all training phases of the learner
+                learn = cnn_learner(dls, resnet18, cbs=[NeptuneCallback(run=run, base_namespace="experiment_2")])
+                learn.fit_one_cycle(1)
+                learn.fit_one_cycle(2)
+
+                # Log model weights
+
+                # Add SaveModelCallback() 
+
+                # 1. Log Every N epochs
+                n = 2
+                learn = cnn_learner(
+                    dls, resnet18, metrics=accuracy,
+                    cbs=[SaveModelCallback(every_epoch=n),
+                        NeptuneCallback(run=run, base_namespace='experiment_3', upload_saved_models='all')])
+
+                learn.fit_one_cycle(5)
+
+                # 2. Best Model
+                learn = cnn_learner(
+                    dls, resnet18, metrics=accuracy,
+                    cbs=[SaveModelCallback(), NeptuneCallback(run=run, base_namespace='experiment_4')])
+
+                learn.fit_one_cycle(5)
+
+                # Log images
+                batch = dls.one_batch()
+                for i, (x, y) in enumerate(dls.decode_batch(batch)):
+                    # Neptune supports torch tensors
+                    # fastai uses their own tensor type name TensorImage
+                    # so you have to convert it back to torch.Tensor
+                    run["images/one_batch"].log(
+                        File.as_image(x.as_subclass(torch.Tensor).permute(2, 1, 0) / 255.0),
+                        name=f"{i}",
+                        description=f"Label: {y}",
+                    )
+
+                # Stop Run
+                run.stop()
+
+        .. _Neptune-fastai docs:
+            https://docs.neptune.ai/integrations-and-supported-tools/model-training/fastai
+           _run docs:
+            https://docs.neptune.ai/api-reference/run
+           _example scripts:
+            https://github.com/neptune-ai/examples/tree/main/integrations-and-supported-tools/fastai/scripts
+            
+        """
     order = SaveModelCallback.order + 1
 
     def __init__(self,
                  run: neptune.Run,
                  base_namespace: str = '',
                  upload_saved_models: Optional[str] = 'all',
-                 **kwargs):
+                 **kwargs):             
         super().__init__(**kwargs)
 
         expect_not_an_experiment(run)
