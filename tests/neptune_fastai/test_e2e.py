@@ -15,13 +15,15 @@
 #
 from itertools import islice
 
-import neptune.new as neptune
-import neptune_fastai
 from fastai.basics import URLs, accuracy, error_rate, untar_data
 from fastai.callback.all import SaveModelCallback
 from fastai.tabular.all import Categorify, FillMissing, Normalize, TabularDataLoaders, tabular_learner
 from fastai.vision.all import ImageDataLoaders, Resize, cnn_learner, get_image_files, squeezenet1_0
+
+import neptune.new as neptune
 from neptune.new.integrations.fastai import NeptuneCallback
+
+import neptune_fastai
 
 
 def is_cat(x):
