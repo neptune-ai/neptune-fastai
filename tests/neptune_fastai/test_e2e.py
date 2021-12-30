@@ -73,7 +73,7 @@ class TestE2E:
         # and
         dateset = run['experiment/io_files/resources/dataset'].fetch()
         assert dateset['path'].endswith('.fastai/data/oxford-iiit-pet/images')
-        assert dateset['size'] == 205
+        assert dateset['size'] == 103
 
         # and
         metrics = run['experiment/metrics'].fetch()
