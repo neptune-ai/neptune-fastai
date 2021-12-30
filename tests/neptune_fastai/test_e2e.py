@@ -77,7 +77,7 @@ class TestE2E:
 
         # and
         metrics = run['experiment/metrics'].fetch()
-        assert len(metrics.keys()) == 4
+        assert len(metrics.keys()) == 1
         assert metrics['fit_0']['n_epoch'] == 1
 
     def test_tabular_model(self):
