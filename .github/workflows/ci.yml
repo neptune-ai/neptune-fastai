@@ -1,6 +1,19 @@
 name: neptune-fastai
 on: [push]
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install -e .
+      - name: Lint
+        run: |
+          python -m pylint -j 0 -f parseable neptune_fastai tests
   test:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -14,13 +27,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          pip install -e .
-      - name: Install test dependencies
-        run: |
           pip install -e .[dev]
-      - name: Lint
-        run : |
-          python -m pylint -j 0 -f parseable neptune_fastai tests
       - name: Build and test
         env:
           NEPTUNE_API_TOKEN: ${{ secrets.E2E_NEPTUNE_API_TOKEN }}
