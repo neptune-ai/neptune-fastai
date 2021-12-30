@@ -28,7 +28,7 @@ except ImportError:
 
 @pytest.fixture()
 def run():
-    exp = neptune.init(mode='debug')
+    exp = neptune.init()
     yield exp
     exp.stop()
 
