@@ -5,16 +5,16 @@ inputs:
   working_directory:
     description: 'Working directory'
     required: false
-    default: $PWD
+    default: .
 runs:
     using: "composite"
     steps:
       - name: Install dependencies
-        working-directory: $INPUTS_WORKING_DIRECTORY
+        working-directory: ${{ inputs.working_directory }}
         run: pip install -e .[dev]
         shell: bash
 
       - name: Run pre-commit
-        working-directory: $INPUTS_WORKING_DIRECTORY
+        working-directory: ${{ inputs.working_directory }}
         run: py.test
         shell: bash
