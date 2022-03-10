@@ -1,13 +1,20 @@
 ---
 name: Test E2E
 description: Run e2e tests
+inputs:
+  working_directory:
+    description: 'Working directory'
+    required: false
+    default: $PWD
 runs:
     using: "composite"
     steps:
       - name: Install dependencies
+        working-directory: $INPUTS_WORKING_DIRECTORY
         run: pip install -e .[dev]
         shell: bash
 
       - name: Run pre-commit
+        working-directory: $INPUTS_WORKING_DIRECTORY
         run: py.test
         shell: bash
