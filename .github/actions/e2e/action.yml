@@ -12,6 +12,7 @@ runs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
+          repository: neptune-ai/neptune-fastai
           path: ${{ inputs.working_directory }}
 
       - name: Install dependencies
