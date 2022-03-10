@@ -26,15 +26,8 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          pip install -e .[dev]
-      - name: Build and test
-        env:
-          NEPTUNE_API_TOKEN: ${{ secrets.E2E_NEPTUNE_API_TOKEN }}
-          NEPTUNE_PROJECT: e2e
-        run : |
-          py.test
+      - name: Test
+        uses: ./.github/actions/lint
 
   publish:
     runs-on: ubuntu-latest
