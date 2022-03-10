@@ -1,0 +1,13 @@
+---
+name: Test E2E
+description: Run e2e tests
+runs:
+    using: "composite"
+    steps:
+      - name: Install dependencies
+        run: pip install -e .[dev]
+        shell: bash
+
+      - name: Run pre-commit
+        run: py.test
+        shell: bash
