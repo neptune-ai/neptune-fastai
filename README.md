@@ -28,43 +28,32 @@ Experiment tracking, model registry, data versioning, and live model monitoring 
 * [Example dashboard in the Neptune app](https://app.neptune.ai/o/common/org/fastai-integration/e/FAS-61/dashboard/fastai-dashboard-1f456716-f509-4432-b8b3-a7f5242703b6)
 * [Run example in Google Colab](https://colab.research.google.com/github/neptune-ai/examples/blob/main/integrations-and-supported-tools/fastai/notebooks/Neptune_fastai.ipynb)
 
-## Minimal example
+## Example
 
 ```python
-from fastai.basics import URLs, untar_data, accuracy
-from fastai.tabular.all import tabular_learner, TabularDataLoaders, Categorify, FillMissing, Normalize
-from fastai.callback.all import SaveModelCallback
+# On the command line:
+pip install fastai neptune-client[fastai]
+```
+```python
+# In Python:
+import neptune.new as neptune
 
-from neptune import new as neptune
-from neptune_fastai.impl import NeptuneCallback
+# Start a run
+run = neptune.init(project="common/fastai-integration",
+                   api_token="ANONYMOUS",
+                   source_files=["*.py"])
 
+# Log a single training phase
+learn = learner(...)
+learn.fit(..., cbs = NeptuneCallback(run=run))
 
-neptune_run = neptune.init()
+# Log all training phases of the learner
+learn = cnn_learner(..., cbs=NeptuneCallback(run=run))
+learn.fit(...)
+learn.fit(...)
 
-path = untar_data(URLs.ADULT_SAMPLE)
-
-dls = TabularDataLoaders.from_csv(path / 'adult.csv',
-                                  path=path,
-                                  y_names="salary",
-                                  cat_names=[
-                                      'workclass',
-                                      'education',
-                                      'marital-status',
-                                      'occupation',
-                                      'relationship',
-                                      'race'
-                                  ],
-                                  cont_names=['age', 'fnlwgt', 'education-num'],
-                                  procs=[Categorify, FillMissing, Normalize])
-
-learn = tabular_learner(dls,
-                        metrics=accuracy)
-learn.fit_one_cycle(10,
-                    cbs=[
-                            NeptuneCallback(run=neptune_run,
-                                            base_namespace='experiment'),
-                            SaveModelCallback(monitor='accuracy')
-                        ])
+# Stop the run 
+run.stop()
 ```
 
 ## Support
