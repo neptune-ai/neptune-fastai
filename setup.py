@@ -16,7 +16,7 @@ def main():
         all_deps += extras[group_name]
     extras['all'] = all_deps
     extras['dev'] = [
-        'pylint==2.4.2',
+        'pylint==2.9.6',
         'pylintfileheader==0.0.2',
         'pytest>=5.0',
         'pytest-tap==3.2',
