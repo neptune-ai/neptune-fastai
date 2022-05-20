@@ -144,7 +144,6 @@ class NeptuneCallback(Callback):
                     'non_trainable_params': self._total_model_parameters - self._trainable_model_parameters
                 },
             },
-            'criterion': self._optimizer_criterion,
             'optimizer': {
                 'name': self._optimizer_name,
                 'initial_hyperparameters': self._optimizer_hyperparams
