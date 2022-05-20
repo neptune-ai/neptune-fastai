@@ -151,6 +151,12 @@ class NeptuneCallback(Callback):
             }
         }
 
+        if hasattr(self.learn.dls, 'vocab'):
+            config['model']['vocab'] = {
+                    'details': self._vocab,
+                    'total': len(self._vocab)
+                }
+
         self.neptune_run[f'{self.base_namespace}/config'] = config
 
     def after_create(self):
