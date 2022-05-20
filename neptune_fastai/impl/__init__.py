@@ -134,14 +134,10 @@ class NeptuneCallback(Callback):
         return 'training' if self.learn.training else 'validation'
 
     def _log_model_configuration(self):
-        self.neptune_run[f'{self.base_namespace}/config'] = {
+        config = {
             'device': self._device,
             'batch_size': self._batch_size,
             'model': {
-                'vocab': {
-                    'details': self._vocab,
-                    'total': len(self._vocab)
-                },
                 'params': {
                     'total': self._total_model_parameters,
                     'trainable_params': self._trainable_model_parameters,
@@ -154,6 +150,8 @@ class NeptuneCallback(Callback):
                 'initial_hyperparameters': self._optimizer_hyperparams
             }
         }
+
+        self.neptune_run[f'{self.base_namespace}/config'] = config
 
     def after_create(self):
         if not hasattr(self, 'save_model'):
