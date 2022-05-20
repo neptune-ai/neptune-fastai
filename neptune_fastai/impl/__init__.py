@@ -103,7 +103,10 @@ class NeptuneCallback(Callback):
 
     @property
     def _optimizer_criterion(self) -> str:
-        return repr(self.loss_func.func)
+        if hasattr(self.learn.loss_func, 'func'):
+            return repr(self.loss_func.func)
+        else:
+            return repr(self.loss_func)
 
     @property
     def _optimizer_hyperparams(self) -> Optional[dict]:
@@ -144,6 +147,7 @@ class NeptuneCallback(Callback):
                     'non_trainable_params': self._total_model_parameters - self._trainable_model_parameters
                 },
             },
+            'criterion': _optimizer_criterion,
             'optimizer': {
                 'name': self._optimizer_name,
                 'initial_hyperparameters': self._optimizer_hyperparams
@@ -154,7 +158,7 @@ class NeptuneCallback(Callback):
             config['model']['vocab'] = {
                 'details': self._vocab,
                 'total': len(self._vocab)
-            }
+            }       
 
         self.neptune_run[f'{self.base_namespace}/config'] = config
 
