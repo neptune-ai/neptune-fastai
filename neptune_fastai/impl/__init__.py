@@ -207,7 +207,7 @@ class NeptuneCallback(Callback):
 
     @property
     def _trainable_model_parameters(self) -> int:
-        return sum([p.numel() for p in trainable_params(self.learn)])
+        return sum(p.numel() for p in trainable_params(self.learn))
 
     @property
     def _optimizer_criterion(self) -> str:
@@ -242,14 +242,10 @@ class NeptuneCallback(Callback):
         return 'training' if self.learn.training else 'validation'
 
     def _log_model_configuration(self):
-        self.neptune_run[f'{self.base_namespace}/config'] = {
+        config = {
             'device': self._device,
             'batch_size': self._batch_size,
             'model': {
-                'vocab': {
-                    'details': self._vocab,
-                    'total': len(self._vocab)
-                },
                 'params': {
                     'total': self._total_model_parameters,
                     'trainable_params': self._trainable_model_parameters,
@@ -263,12 +259,19 @@ class NeptuneCallback(Callback):
             }
         }
 
+        if hasattr(self.learn.dls, 'vocab'):
+            config['model']['vocab'] = {
+                'details': self._vocab,
+                'total': len(self._vocab)
+            }
+
+        self.neptune_run[f'{self.base_namespace}/config'] = config
+
     def after_create(self):
-        if not hasattr(self, 'save_model'):
-            if self.upload_saved_models:
-                warnings.warn(
-                    'NeptuneCallback: SaveModelCallback is necessary for uploading model checkpoints.'
-                )
+        if not hasattr(self, 'save_model') and self.upload_saved_models:
+            warnings.warn(
+                'NeptuneCallback: SaveModelCallback is necessary for uploading model checkpoints.'
+            )
 
     def before_fit(self):
         self._log_model_configuration()
