@@ -1,8 +1,8 @@
 ## [UNRELEASED] neptune-fastai 0.10.2
 
 ## Fixes
-- Attribute error when loss is not BaseLoss. ([#29](https://github.com/neptune-ai/neptune-fastai/pull/29))
 - Skip vocab for models that don't use it. ([#28](https://github.com/neptune-ai/neptune-fastai/pull/28))
+- Attribute error when loss is not BaseLoss. ([#29](https://github.com/neptune-ai/neptune-fastai/pull/29))
 
 ## neptune-fastai 0.10.1
 
