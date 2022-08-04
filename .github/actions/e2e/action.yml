@@ -20,7 +20,7 @@ runs:
         run: pip install -e .[dev]
         shell: bash
 
-      - name: Run pre-commit
+      - name: Run tests
         working-directory: ${{ inputs.working_directory }}
         run: py.test
         shell: bash
