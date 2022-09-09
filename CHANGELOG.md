@@ -1,7 +1,7 @@
 ## neptune-fastai 0.10.3
 
 ### Changes
-- Changed integrations utils to be imported from non-internal package ([#30](https://github.com/neptune-ai/neptune-fastai/pull/30))
+- Changed integrations utils to be imported from non-internal package ([#33](https://github.com/neptune-ai/neptune-fastai/pull/33))
 
 ## neptune-fastai 0.10.2
 
