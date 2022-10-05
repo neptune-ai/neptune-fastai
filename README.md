@@ -2,7 +2,7 @@
 
 Experiment tracking, model registry, data versioning, and live model monitoring for fastai trained models.
 
-## What will you get with this integration? 
+## What will you get with this integration?
 
 * Log, display, organize, and compare ML experiments in a single place
 * Version, store, manage, and query trained models, and model building metadata
@@ -52,7 +52,7 @@ learn = cnn_learner(..., cbs=NeptuneCallback(run=run))
 learn.fit(...)
 learn.fit(...)
 
-# Stop the run 
+# Stop the run
 run.stop()
 ```
 

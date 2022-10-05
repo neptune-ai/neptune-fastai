@@ -26,18 +26,20 @@ from fastai.callback.hook import total_params
 from fastai.callback.tracker import SaveModelCallback
 from fastai.learner import Learner
 from fastai.torch_core import default_device, trainable_params
+
 from neptune_fastai import __version__
 
 try:
     # neptune-client=0.9.0+ package structure
     import neptune.new as neptune
-    from neptune.new.integrations.utils import verify_type, expect_not_an_experiment
+    from neptune.new.integrations.utils import (expect_not_an_experiment,
+                                                verify_type)
     from neptune.new.types import File
 except ImportError:
     # neptune-client>=1.0.0 package structure
-    import neptune
-    from neptune.integrations.utils import verify_type, expect_not_an_experiment
-    from neptune.types import File
+    import neptune  # isort:skip
+    from neptune.integrations.utils import expect_not_an_experiment, verify_type  # isort:skip
+    from neptune.types import File  # isort:skip
 
 
 INTEGRATION_VERSION_KEY = "source_code/integrations/neptune-fastai"
@@ -230,9 +232,7 @@ class NeptuneCallback(Callback):
     @property
     def _frozen_level(self) -> int:
         return (
-            self.opt.frozen_idx
-            if hasattr(self, "opt") and hasattr(self.opt, "frozen_idx")
-            else 0
+            self.opt.frozen_idx if hasattr(self, "opt") and hasattr(self.opt, "frozen_idx") else 0
         )
 
     @property
@@ -300,21 +300,15 @@ class NeptuneCallback(Callback):
             ] = self.n_iter
 
         if self.learn.train_iter == 1:
-            self.neptune_run[
-                f"{self.base_namespace}/config/input_shape"
-            ] = self._input_shape
+            self.neptune_run[f"{self.base_namespace}/config/input_shape"] = self._input_shape
 
     def after_batch(self):
-        prefix = (
-            f"{self.base_namespace}/metrics/fit_{self.fit_index}/{self._target}/batch"
-        )
+        prefix = f"{self.base_namespace}/metrics/fit_{self.fit_index}/{self._target}/batch"
 
         self.neptune_run[f"{prefix}/loss"].log(value=self.learn.loss.clone())
 
         if hasattr(self, "smooth_loss"):
-            self.neptune_run[f"{prefix}/smooth_loss"].log(
-                value=self.learn.smooth_loss.clone()
-            )
+            self.neptune_run[f"{prefix}/smooth_loss"].log(value=self.learn.smooth_loss.clone())
 
     def after_train(self):
         prefix = f"{self.base_namespace}/metrics/fit_{self.fit_index}/training/loader"
@@ -358,9 +352,7 @@ class NeptuneCallback(Callback):
             and self.epoch % self.save_model.every_epoch == 0
         ):
             filename = f"{self.learn.save_model.fname}_{self.learn.save_model.epoch}"
-            path = join_path_file(
-                filename, self.learn.path / self.learn.model_dir, ext=".pth"
-            )
+            path = join_path_file(filename, self.learn.path / self.learn.model_dir, ext=".pth")
             prefix = (
                 f"{self.base_namespace}/io_files/artifacts/model_checkpoints/fit_{self.fit_index}/"
                 f"epoch_{self.learn.save_model.epoch}"
@@ -375,9 +367,7 @@ class NeptuneCallback(Callback):
             and not self.save_model.every_epoch
         ):
             filename = self.learn.save_model.fname
-            path = join_path_file(
-                filename, self.learn.path / self.learn.model_dir, ext=".pth"
-            )
+            path = join_path_file(filename, self.learn.path / self.learn.model_dir, ext=".pth")
             prefix = f"{self.base_namespace}/io_files/artifacts/model_checkpoints/fit_{self.fit_index}/{filename}"
 
             self.neptune_run[prefix].upload(str(path))
@@ -394,9 +384,7 @@ def _log_model_architecture(run: neptune.Run, base_namespace: str, learn: Learne
     model_architecture = File.from_content(repr(learn.model))
 
     run[f"{base_namespace}/config/model/architecture"].upload(model_architecture)
-    run[f"{base_namespace}/io_files/artifacts/model_architecture"].upload(
-        model_architecture
-    )
+    run[f"{base_namespace}/io_files/artifacts/model_architecture"].upload(model_architecture)
 
 
 def _log_dataset_metadata(run: neptune.Run, base_namespace: str, learn: Learner):
