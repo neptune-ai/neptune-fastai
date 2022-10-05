@@ -56,7 +56,7 @@ def main():
         license="Apache License 2.0",
         install_requires=base_libs,
         extras_require=extras,
-        packages=find_packages(),
+        packages=find_packages(where="src"),
         cmdclass=versioneer.get_cmdclass(),
         zip_safe=False,
         classifiers=[
@@ -88,6 +88,7 @@ def main():
             "ML Model Store",
             "ML Metadata Store",
         ],
+        package_dir={"": "src"},
     )
 
 
