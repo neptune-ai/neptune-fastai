@@ -1,7 +1,7 @@
 ## [UNRELEASED] neptune-fastai 0.10.4
 
 ### Changes
-- moved neptune_fastai package to src dir
+- moved neptune_fastai package to src dir ([#37](https://github.com/neptune-ai/neptune-fastai/pull/37))
 
 ## neptune-fastai 0.10.3
 
