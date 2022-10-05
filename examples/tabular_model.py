@@ -15,8 +15,7 @@
 #
 from fastai.basics import URLs, accuracy, untar_data
 from fastai.callback.all import SaveModelCallback
-from fastai.tabular.all import (Categorify, FillMissing, Normalize,
-                                TabularDataLoaders, tabular_learner)
+from fastai.tabular.all import Categorify, FillMissing, Normalize, TabularDataLoaders, tabular_learner
 from neptune import new as neptune
 
 from neptune_fastai.impl import NeptuneCallback

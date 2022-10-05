@@ -32,8 +32,7 @@ from neptune_fastai import __version__
 try:
     # neptune-client=0.9.0+ package structure
     import neptune.new as neptune
-    from neptune.new.integrations.utils import (expect_not_an_experiment,
-                                                verify_type)
+    from neptune.new.integrations.utils import expect_not_an_experiment, verify_type
     from neptune.new.types import File
 except ImportError:
     # neptune-client>=1.0.0 package structure
@@ -211,11 +210,7 @@ class NeptuneCallback(Callback):
     @property
     def _optimizer_criterion(self) -> str:
 
-        return repr(
-            self.learn.loss_func.func
-            if hasattr(self.learn.loss_func, "func")
-            else self.learn.loss_func
-        )
+        return repr(self.learn.loss_func.func if hasattr(self.learn.loss_func, "func") else self.learn.loss_func)
 
     @property
     def _optimizer_hyperparams(self) -> Optional[dict]:
@@ -231,9 +226,7 @@ class NeptuneCallback(Callback):
 
     @property
     def _frozen_level(self) -> int:
-        return (
-            self.opt.frozen_idx if hasattr(self, "opt") and hasattr(self.opt, "frozen_idx") else 0
-        )
+        return self.opt.frozen_idx if hasattr(self, "opt") and hasattr(self.opt, "frozen_idx") else 0
 
     @property
     def _input_shape(self) -> Dict:
@@ -255,8 +248,7 @@ class NeptuneCallback(Callback):
                 "params": {
                     "total": self._total_model_parameters,
                     "trainable_params": self._trainable_model_parameters,
-                    "non_trainable_params": self._total_model_parameters
-                    - self._trainable_model_parameters,
+                    "non_trainable_params": self._total_model_parameters - self._trainable_model_parameters,
                 },
             },
             "criterion": self._optimizer_criterion,
@@ -276,9 +268,7 @@ class NeptuneCallback(Callback):
 
     def after_create(self):
         if not hasattr(self, "save_model") and self.upload_saved_models:
-            warnings.warn(
-                "NeptuneCallback: SaveModelCallback is necessary for uploading model checkpoints."
-            )
+            warnings.warn("NeptuneCallback: SaveModelCallback is necessary for uploading model checkpoints.")
 
     def before_fit(self):
         self._log_model_configuration()
@@ -313,15 +303,11 @@ class NeptuneCallback(Callback):
     def after_train(self):
         prefix = f"{self.base_namespace}/metrics/fit_{self.fit_index}/training/loader"
 
-        for metric_name, metric_value in zip(
-            self.learn.recorder.metric_names, self.learn.recorder.log
-        ):
+        for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
             if metric_name not in {"epoch", "time"}:
                 self.neptune_run[f"{prefix}/{metric_name}"].log(metric_value)
 
-        self.neptune_run[f"{prefix}/duration"].log(
-            value=time.time() - self.learn.recorder.start_epoch
-        )
+        self.neptune_run[f"{prefix}/duration"].log(value=time.time() - self.learn.recorder.start_epoch)
 
         _log_optimizer_hyperparams(
             self.neptune_run,
@@ -333,15 +319,11 @@ class NeptuneCallback(Callback):
     def after_validate(self):
         prefix = f"{self.base_namespace}/metrics/fit_{self.fit_index}/validation/loader"
 
-        for metric_name, metric_value in zip(
-            self.learn.recorder.metric_names, self.learn.recorder.log
-        ):
+        for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
             if metric_name not in {"epoch", "time", "train_loss"}:
                 self.neptune_run[f"{prefix}/{metric_name}"].log(metric_value)
 
-        self.neptune_run[f"{prefix}/duration"].log(
-            value=time.time() - self.learn.recorder.start_epoch
-        )
+        self.neptune_run[f"{prefix}/duration"].log(value=time.time() - self.learn.recorder.start_epoch)
 
     def after_epoch(self):
         if (
@@ -377,9 +359,7 @@ class NeptuneCallback(Callback):
 
 def _log_model_architecture(run: neptune.Run, base_namespace: str, learn: Learner):
     if hasattr(learn, "arch"):
-        run[f"{base_namespace}/config/model/architecture_name"] = getattr(
-            learn.arch, "__name__", ""
-        )
+        run[f"{base_namespace}/config/model/architecture_name"] = getattr(learn.arch, "__name__", "")
 
     model_architecture = File.from_content(repr(learn.model))
 
@@ -408,8 +388,6 @@ def retrieve_fit_index(run: neptune.Run, path: str) -> int:
     return len(run.get_attribute(path) or [])
 
 
-def _log_optimizer_hyperparams(
-    run: neptune.Run, prefix: str, optimizer_hyperparams: dict, n_epoch: int
-):
+def _log_optimizer_hyperparams(run: neptune.Run, prefix: str, optimizer_hyperparams: dict, n_epoch: int):
     for param, value in optimizer_hyperparams.items():
         _log_or_assign_metric(run, n_epoch, f"{prefix}/{param}", value)

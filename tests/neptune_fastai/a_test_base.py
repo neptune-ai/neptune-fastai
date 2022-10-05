@@ -32,9 +32,7 @@ except ImportError:
 
 class TestBase:
     def test_basename(self, run, dataset):
-        neptune_callback = NeptuneCallback(
-            run=run, base_namespace="experiment", upload_saved_models=None
-        )
+        neptune_callback = NeptuneCallback(run=run, base_namespace="experiment", upload_saved_models=None)
 
         learn = tabular_learner(dataset, metrics=accuracy, cbs=[neptune_callback])
         learn.fit_one_cycle(1)
@@ -52,9 +50,7 @@ class TestBase:
         assert len(structure["experiment"]["metrics"]) == 1
 
     def test_basename_fit_callback(self, run, dataset):
-        neptune_callback = NeptuneCallback(
-            run=run, base_namespace="experiment", upload_saved_models=None
-        )
+        neptune_callback = NeptuneCallback(run=run, base_namespace="experiment", upload_saved_models=None)
 
         learn = tabular_learner(dataset, layers=[10, 10], metrics=accuracy)
         learn.fit_one_cycle(1, cbs=[neptune_callback])
@@ -72,9 +68,7 @@ class TestBase:
         assert len(structure["experiment"]["metrics"]) == 1
 
     def test_multiple_fits(self, run, dataset):
-        neptune_callback = NeptuneCallback(
-            run=run, base_namespace="experiment", upload_saved_models=None
-        )
+        neptune_callback = NeptuneCallback(run=run, base_namespace="experiment", upload_saved_models=None)
 
         learn = tabular_learner(dataset, metrics=accuracy, layers=[10, 10], cbs=[neptune_callback])
         learn.fit_one_cycle(1)
@@ -137,9 +131,7 @@ class TestBase:
         assert len(structure["metrics"]) == 2
 
         assert isinstance(structure["metrics"]["fit_0"]["optimizer_hyperparameters"]["eps"], Float)
-        assert isinstance(
-            structure["metrics"]["fit_1"]["optimizer_hyperparameters"]["eps"], FloatSeries
-        )
+        assert isinstance(structure["metrics"]["fit_1"]["optimizer_hyperparameters"]["eps"], FloatSeries)
 
     def test_saving_from_constructor(self, run, dataset):
         learn = tabular_learner(
