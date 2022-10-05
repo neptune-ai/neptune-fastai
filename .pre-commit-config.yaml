@@ -14,10 +14,10 @@ repos:
     rev: 5.10.1
     hooks:
       - id: isort
-        args: [--profile black]
-#  - repo: https://github.com/psf/black
-#    rev: 22.6.0
-#    hooks:
-#      - id: black
-#        args:
-#          - --line-length=100
+        args: [--profile black --line-length=100]
+  - repo: https://github.com/psf/black
+    rev: 22.6.0
+    hooks:
+      - id: black
+        args:
+          - --line-length=100
