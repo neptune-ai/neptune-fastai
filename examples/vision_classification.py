@@ -15,10 +15,10 @@
 #
 from itertools import islice
 
-from fastai.basics import untar_data, URLs, error_rate
-from fastai.vision.all import ImageDataLoaders, get_image_files, Resize, cnn_learner, resnet34
-
+from fastai.basics import URLs, error_rate, untar_data
+from fastai.vision.all import ImageDataLoaders, Resize, cnn_learner, get_image_files, resnet34
 from neptune import new as neptune
+
 from neptune_fastai.impl import NeptuneCallback
 
 
@@ -29,26 +29,29 @@ def is_cat(x):
 def main():
     neptune_run = neptune.init()
 
-    path = untar_data(URLs.PETS) / 'images'
+    path = untar_data(URLs.PETS) / "images"
 
-    dls = ImageDataLoaders.from_name_func(path,
-                                          list(islice(get_image_files(path), 256)),
-                                          valid_pct=0.2,
-                                          seed=42,
-                                          label_func=is_cat,
-                                          item_tfms=Resize(224)
-                                          )
+    dls = ImageDataLoaders.from_name_func(
+        path,
+        list(islice(get_image_files(path), 256)),
+        valid_pct=0.2,
+        seed=42,
+        label_func=is_cat,
+        item_tfms=Resize(224),
+    )
 
-    learn = cnn_learner(dls,
-                        resnet34,
-                        metrics=error_rate,
-                        cbs=[NeptuneCallback(neptune_run, 'experiment')],
-                        pretrained=False)
+    learn = cnn_learner(
+        dls,
+        resnet34,
+        metrics=error_rate,
+        cbs=[NeptuneCallback(neptune_run, "experiment")],
+        pretrained=False,
+    )
 
     learn.fit_one_cycle(1)
     learn.fine_tune(2)
     learn.fit(2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

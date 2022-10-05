@@ -14,9 +14,8 @@
 # limitations under the License.
 #
 import pytest
-
 from fastai.basics import URLs, untar_data
-from fastai.tabular.all import TabularDataLoaders, Categorify, FillMissing, Normalize
+from fastai.tabular.all import Categorify, FillMissing, Normalize, TabularDataLoaders
 
 try:
     # neptune-client=0.9.0 package structure
@@ -37,16 +36,18 @@ def run():
 def dataset():
     path = untar_data(URLs.ADULT_SAMPLE)
 
-    yield TabularDataLoaders.from_csv(path / 'adult.csv',
-                                      path=path,
-                                      y_names="salary",
-                                      cat_names=[
-                                          'workclass',
-                                          'education',
-                                          'marital-status',
-                                          'occupation',
-                                          'relationship',
-                                          'race'
-                                      ],
-                                      cont_names=['age', 'fnlwgt', 'education-num'],
-                                      procs=[Categorify, FillMissing, Normalize])
+    yield TabularDataLoaders.from_csv(
+        path / "adult.csv",
+        path=path,
+        y_names="salary",
+        cat_names=[
+            "workclass",
+            "education",
+            "marital-status",
+            "occupation",
+            "relationship",
+            "race",
+        ],
+        cont_names=["age", "fnlwgt", "education-num"],
+        procs=[Categorify, FillMissing, Normalize],
+    )
