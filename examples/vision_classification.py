@@ -16,7 +16,8 @@
 from itertools import islice
 
 from fastai.basics import URLs, error_rate, untar_data
-from fastai.vision.all import ImageDataLoaders, Resize, cnn_learner, get_image_files, resnet34
+from fastai.vision.all import (ImageDataLoaders, Resize, cnn_learner,
+                               get_image_files, resnet34)
 from neptune import new as neptune
 
 from neptune_fastai.impl import NeptuneCallback
