@@ -14,8 +14,16 @@
 # limitations under the License.
 #
 import pytest
-from fastai.basics import URLs, untar_data
-from fastai.tabular.all import Categorify, FillMissing, Normalize, TabularDataLoaders
+from fastai.basics import (
+    URLs,
+    untar_data,
+)
+from fastai.tabular.all import (
+    Categorify,
+    FillMissing,
+    Normalize,
+    TabularDataLoaders,
+)
 
 try:
     # neptune-client=0.9.0 package structure

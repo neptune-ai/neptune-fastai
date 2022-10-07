@@ -19,20 +19,34 @@ __all__ = ["NeptuneCallback", "retrieve_fit_index"]
 import hashlib
 import time
 import warnings
-from typing import Dict, List, Optional
+from typing import (
+    Dict,
+    List,
+    Optional,
+)
 
-from fastai.basics import Callback, join_path_file, store_attr
+from fastai.basics import (
+    Callback,
+    join_path_file,
+    store_attr,
+)
 from fastai.callback.hook import total_params
 from fastai.callback.tracker import SaveModelCallback
 from fastai.learner import Learner
-from fastai.torch_core import default_device, trainable_params
+from fastai.torch_core import (
+    default_device,
+    trainable_params,
+)
 
 from neptune_fastai import __version__
 
 try:
     # neptune-client=0.9.0+ package structure
     import neptune.new as neptune
-    from neptune.new.integrations.utils import expect_not_an_experiment, verify_type
+    from neptune.new.integrations.utils import (
+        expect_not_an_experiment,
+        verify_type,
+    )
     from neptune.new.types import File
 except ImportError:
     # neptune-client>=1.0.0 package structure
