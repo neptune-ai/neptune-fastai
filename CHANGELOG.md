@@ -3,6 +3,10 @@
 ### Changes
 - moved neptune_fastai package to src dir ([#37](https://github.com/neptune-ai/neptune-fastai/pull/37))
 
+### Fixes
+- Fixed NeptuneCallback import error - now possible to directly import with `from neptune_fastai import NeptuneCallback`
+  ([#39](https://github.com/neptune-ai/neptune-fastai/pull/39))
+
 ## neptune-fastai 0.10.3
 
 ### Changes
