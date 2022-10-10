@@ -14,4 +14,8 @@
 # limitations under the License.
 #
 
-from neptune_fastai.impl import *
+from neptune_fastai.impl import (
+    NeptuneCallback,
+    __version__,
+    retrieve_fit_index,
+)
