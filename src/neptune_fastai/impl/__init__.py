@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-__all__ = ["NeptuneCallback", "retrieve_fit_index"]
+__all__ = ["NeptuneCallback", "retrieve_fit_index", "__version__"]
 
 import hashlib
 import time
@@ -38,8 +38,6 @@ from fastai.torch_core import (
     trainable_params,
 )
 
-from neptune_fastai import __version__
-
 try:
     # neptune-client=0.9.0+ package structure
     import neptune.new as neptune
@@ -53,6 +51,11 @@ except ImportError:
     import neptune  # isort:skip
     from neptune.integrations.utils import expect_not_an_experiment, verify_type  # isort:skip
     from neptune.types import File  # isort:skip
+
+
+from neptune_fastai._version import get_versions
+
+__version__ = get_versions()["version"]
 
 
 INTEGRATION_VERSION_KEY = "source_code/integrations/neptune-fastai"

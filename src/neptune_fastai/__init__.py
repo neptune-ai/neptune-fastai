@@ -14,12 +14,8 @@
 # limitations under the License.
 #
 
-from neptune_fastai._version import get_versions
-
-__all__ = [
-    "__version__",
-]
-
-__version__ = get_versions()["version"]
-
-del get_versions
+from neptune_fastai.impl import (
+    NeptuneCallback,
+    __version__,
+    retrieve_fit_index,
+)
