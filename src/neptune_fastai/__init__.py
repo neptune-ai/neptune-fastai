@@ -13,6 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+__all__ = [
+    "NeptuneCallback",
+    "__version__",
+    "retrieve_fit_index",
+]
 
 from neptune_fastai.impl import (
     NeptuneCallback,
