@@ -20,6 +20,11 @@ runs:
         run: pip install -e .[dev]
         shell: bash
 
+      - name: List dependencies
+        run: |
+          pip list
+        shell: bash
+
       - name: Run tests
         working-directory: ${{ inputs.working_directory }}
         run: py.test
