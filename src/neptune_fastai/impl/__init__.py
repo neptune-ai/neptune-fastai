@@ -62,7 +62,6 @@ INTEGRATION_VERSION_KEY = "source_code/integrations/neptune-fastai"
 
 
 class NeptuneCallback(Callback):
-    # pylint: disable=trailing-whitespace
     """Neptune callback for logging metadata during fastai training loop
 
     See guide with example in the `Neptune-fastai docs`_.
@@ -170,6 +169,7 @@ class NeptuneCallback(Callback):
         https://github.com/neptune-ai/examples/tree/main/integrations-and-supported-tools/fastai/scripts
 
     """
+
     order = SaveModelCallback.order + 1
 
     def __init__(
