@@ -73,7 +73,6 @@ packages = [
 
 [tool.poetry.urls]
 "Tracker" = "https://github.com/neptune-ai/neptune-fastai/issues"
-"Source" = "https://github.com/neptune-ai/neptune-fastai"
 "Documentation" = "https://docs.neptune.ai/integrations-and-supported-tools/model-training/fastai"
 
 [tool.black]
