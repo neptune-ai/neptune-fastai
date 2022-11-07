@@ -52,11 +52,7 @@ except ImportError:
     from neptune.integrations.utils import expect_not_an_experiment, verify_type  # isort:skip
     from neptune.types import File  # isort:skip
 
-
-from neptune_fastai._version import get_versions
-
-__version__ = get_versions()["version"]
-
+from neptune_fastai.impl.version import __version__
 
 INTEGRATION_VERSION_KEY = "source_code/integrations/neptune-fastai"
 

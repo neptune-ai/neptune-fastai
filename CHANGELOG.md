@@ -1,7 +1,8 @@
-## [UNRELEASED] neptune-fastai 0.10.4
+## neptune-fastai 0.10.4
 
 ### Changes
 - moved neptune_fastai package to src dir ([#37](https://github.com/neptune-ai/neptune-fastai/pull/37))
+- Poetry as a package builder ([#39](https://github.com/neptune-ai/neptune-fastai/pull/39))
 
 ### Fixes
 - Fixed NeptuneCallback import error - now possible to directly import with `from neptune_fastai import NeptuneCallback`
