@@ -58,18 +58,16 @@ INTEGRATION_VERSION_KEY = "source_code/integrations/neptune-fastai"
 
 
 class NeptuneCallback(Callback):
-    """Neptune callback for logging metadata during fastai training loop
+    """Neptune callback for logging metadata during fastai training loop.
 
-    See guide with example in the `Neptune-fastai docs`_.
+    The callback logs paramaters, metrics, losses, model configuration,
+    optimizer configuration, and info about the dataset: path, number of samples, and hash value.
 
-    This callback logs paramaters, metrics, losses, model configuration,
-    optimizer configuration and info about the dataset:
-    path, number of samples and hash value.
-
-    Metrics and losses are logged separately for every ``learner.fit()`` call.
-    For examples when you call ``learner.fit(n)`` the first time it will create
+    Metrics and losses are logged separately for every `learner.fit()` call.
+    For example, when you call `learner.fit(n)` the first time, it will create
     a folder named fit_0 under the folder metrics that contains optimizer hyperparameters,
-    batch and loader-level metrics.
+    batch, and loader-level metrics.
+
     metrics
         |--> fit_0
             |--> batch
@@ -78,39 +76,37 @@ class NeptuneCallback(Callback):
         |--> ...
         |--> fit_n
 
-    Note:
-        You can use public ``api_token="ANONYMOUS"`` and set ``project="common/fastai-integration"``
-        for testing without registration.
+    Note: To try the integration without registering, you can use the public token
+        `ANONYMOUS_API_TOKEN` and set the `project` argument to "common/fastai-integration".
 
     Args:
-        run (:obj: `neptune.new.run.Run`): Neptune run object
-            A run in Neptune is a representation of all metadata that you log to Neptune.
-            Learn more in `run docs`_.
-        base_namespace (:obj: `str`, optional): Root namespace. All metdata will be logged inside.
-        Defaults is empty string. In this case metadata is logged without common "base_namespace"
-        upload_saved_models (:obj: `str`, optional):  `'all'` or `'last'`.
-        When using `'all'`, it uploads all model checkpoints created by `SaveModelCallback()`.
-        When using `'last'`, it uploads the last model checkpoint created by `SaveModelCallback()`.
-        Defaults to `'all'`.
+        run: Neptune `Run` object. A run is a representation of all metadata that you log to Neptune.
+        base_namespace: Root namespace inside which all metdata will be logged.
+            If omitted, the metadata is logged without a common root namespace.
+        upload_saved_models: Which model checkpoints to upload.
+            - `"all"` (default): uploads all model checkpoints created by `SaveModelCallback()`.
+            - `"last"`: uploads the last model checkpoint created by `SaveModelCallback()`.
 
     Examples:
-        For more examples visit `example scripts`_.
-
         Full script that does model training and logging of the metadata.
+
             import fastai
-            from neptune.new.integrations.fastai import NeptuneCallback
             from fastai.vision.all import *
+
             import neptune.new as neptune
+            from neptune.new.integrations.fastai import NeptuneCallback
             from neptune.new.types import File
 
-            run = neptune.init(
-                project="common/fastai-integration", api_token="ANONYMOUS", tags="more options"
+            run = neptune.init_run(
+                project="common/fastai-integration",
+                api_token=neptune.ANONYMOUS_API_TOKEN,
+                tags="more options",
             )
 
             path = untar_data(URLs.MNIST_TINY)
             dls = ImageDataLoaders.from_csv(path)
 
-            # Single & Multi phase logging
+            # Single- and multi-phase logging
 
             # 1. Log a single training phase
             learn = cnn_learner(dls, resnet18, metrics=accuracy)
@@ -118,7 +114,9 @@ class NeptuneCallback(Callback):
             learn.fit_one_cycle(2)
 
             # 2. Log all training phases of the learner
-            learn = cnn_learner(dls, resnet18, cbs=[NeptuneCallback(run=run, base_namespace="experiment_2")])
+            learn = cnn_learner(
+                dls, resnet18, cbs=[NeptuneCallback(run=run, base_namespace="experiment_2")]
+            )
             learn.fit_one_cycle(1)
             learn.fit_one_cycle(2)
 
@@ -126,19 +124,29 @@ class NeptuneCallback(Callback):
 
             # Add SaveModelCallback()
 
-            # 1. Log Every N epochs
+            # 1. Log every n epochs
             n = 2
             learn = cnn_learner(
-                dls, resnet18, metrics=accuracy,
-                cbs=[SaveModelCallback(every_epoch=n),
-                    NeptuneCallback(run=run, base_namespace='experiment_3', upload_saved_models='all')])
+                dls,
+                resnet18,
+                metrics=accuracy,
+                cbs=[
+                    SaveModelCallback(every_epoch=n),
+                    NeptuneCallback(
+                        run=run, base_namespace="experiment_3", upload_saved_models="all"
+                    ),
+                ],
+            )
 
             learn.fit_one_cycle(5)
 
-            # 2. Best Model
+            # 2. Best model
             learn = cnn_learner(
-                dls, resnet18, metrics=accuracy,
-                cbs=[SaveModelCallback(), NeptuneCallback(run=run, base_namespace='experiment_4')])
+                dls,
+                resnet18,
+                metrics=accuracy,
+                cbs=[SaveModelCallback(), NeptuneCallback(run=run, base_namespace="experiment_4")],
+            )
 
             learn.fit_one_cycle(5)
 
@@ -154,16 +162,16 @@ class NeptuneCallback(Callback):
                     description=f"Label: {y}",
                 )
 
-            # Stop Run
+            # Stop the run
             run.stop()
 
-    .. _Neptune-fastai docs:
-        https://docs.neptune.ai/integrations-and-supported-tools/model-training/fastai
-       _run docs:
-        https://docs.neptune.ai/api-reference/run
-       _example scripts:
-        https://github.com/neptune-ai/examples/tree/main/integrations-and-supported-tools/fastai/scripts
+    For more, see the docs:
+        https://docs.neptune.ai/integrations/fastai
+        https://docs.neptune.ai/api/neptune/#init_run
+        https://docs.neptune.ai/usage
 
+    Example scripts:
+        https://github.com/neptune-ai/examples/tree/main/integrations-and-supported-tools/fastai/scripts
     """
 
     order = SaveModelCallback.order + 1
