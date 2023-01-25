@@ -68,16 +68,16 @@ class NeptuneCallback(Callback):
     a folder named fit_0 under the folder metrics that contains optimizer hyperparameters,
     batch, and loader-level metrics.
 
-    metrics
-        |--> fit_0
-            |--> batch
-            |--> loader
-            |--> optimizer hyperparameters
-        |--> ...
-        |--> fit_n
+        metrics
+            |--> fit_0
+                |--> batch
+                |--> loader
+                |--> optimizer hyperparameters
+            |--> ...
+            |--> fit_n
 
-    Note: To try the integration without registering, you can use the public token
-        `ANONYMOUS_API_TOKEN` and set the `project` argument to "common/fastai-integration".
+    Note: To try the integration without registering, you can use the public API token
+        `neptune.ANONYMOUS_API_TOKEN` and set the `project` argument to "common/fastai-integration".
 
     Args:
         run: Neptune `Run` object. A run is a representation of all metadata that you log to Neptune.
@@ -88,87 +88,48 @@ class NeptuneCallback(Callback):
             - `"last"`: uploads the last model checkpoint created by `SaveModelCallback()`.
 
     Examples:
-        Full script that does model training and logging of the metadata.
 
-            import fastai
-            from fastai.vision.all import *
+        Logging a single training phase:
+
+            from fastai.callback.all import SaveModelCallback
+            from fastai.vision.all import (
+                untar_data,
+                ImageDataLoaders,
+                ...
+            )
 
             import neptune.new as neptune
             from neptune.new.integrations.fastai import NeptuneCallback
             from neptune.new.types import File
 
-            run = neptune.init_run(
-                project="common/fastai-integration",
-                api_token=neptune.ANONYMOUS_API_TOKEN,
-                tags="more options",
-            )
+            run = neptune.init_run()
 
             path = untar_data(URLs.MNIST_TINY)
-            dls = ImageDataLoaders.from_csv(path)
+            dls = ImageDataLoaders.from_csv(path, num_workers=0)
 
-            # Single- and multi-phase logging
-
-            # 1. Log a single training phase
-            learn = cnn_learner(dls, resnet18, metrics=accuracy)
+            # (Neptune) Log a single training phase
+            learn = vision_learner(dls, resnet18, metrics=accuracy)
             learn.fit_one_cycle(1, cbs=[NeptuneCallback(run=run, base_namespace="experiment_1")])
             learn.fit_one_cycle(2)
 
-            # 2. Log all training phases of the learner
-            learn = cnn_learner(
-                dls, resnet18, cbs=[NeptuneCallback(run=run, base_namespace="experiment_2")]
-            )
-            learn.fit_one_cycle(1)
-            learn.fit_one_cycle(2)
+        To log model weight files, add SavemodelCallback() to the callbacks list of your learner or fit method:
 
-            # Log model weights
-
-            # Add SaveModelCallback()
-
-            # 1. Log every n epochs
             n = 2
-            learn = cnn_learner(
-                dls,
-                resnet18,
-                metrics=accuracy,
+            learn = vision_learner(
+                ...
                 cbs=[
                     SaveModelCallback(every_epoch=n),
                     NeptuneCallback(
-                        run=run, base_namespace="experiment_3", upload_saved_models="all"
+                        run=run, base_namespace="experiment_2", upload_saved_models="all"
                     ),
                 ],
             )
 
             learn.fit_one_cycle(5)
 
-            # 2. Best model
-            learn = cnn_learner(
-                dls,
-                resnet18,
-                metrics=accuracy,
-                cbs=[SaveModelCallback(), NeptuneCallback(run=run, base_namespace="experiment_4")],
-            )
-
-            learn.fit_one_cycle(5)
-
-            # Log images
-            batch = dls.one_batch()
-            for i, (x, y) in enumerate(dls.decode_batch(batch)):
-                # Neptune supports torch tensors
-                # fastai uses their own tensor type name TensorImage
-                # so you have to convert it back to torch.Tensor
-                run["images/one_batch"].log(
-                    File.as_image(x.as_subclass(torch.Tensor).permute(2, 1, 0) / 255.0),
-                    name=f"{i}",
-                    description=f"Label: {y}",
-                )
-
-            # Stop the run
-            run.stop()
-
     For more, see the docs:
-        https://docs.neptune.ai/integrations/fastai
-        https://docs.neptune.ai/api/neptune/#init_run
-        https://docs.neptune.ai/usage
+        Tutorial: https://docs.neptune.ai/integrations/fastai
+        API reference: https://docs.neptune.ai/api/integrations/fastai
 
     Example scripts:
         https://github.com/neptune-ai/examples/tree/main/integrations-and-supported-tools/fastai/scripts
