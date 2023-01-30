@@ -105,7 +105,7 @@ class NeptuneCallback(Callback):
             run = neptune.init_run()
 
             path = untar_data(URLs.MNIST_TINY)
-            dls = ImageDataLoaders.from_csv(path, num_workers=0)
+            dls = ImageDataLoaders.from_csv(path)
 
             # (Neptune) Log a single training phase
             learn = vision_learner(dls, resnet18, metrics=accuracy)
