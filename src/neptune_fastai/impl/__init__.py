@@ -89,27 +89,22 @@ class NeptuneCallback(Callback):
 
     Examples:
 
-        Logging a single training phase:
+        Logging metadata from all training phases:
 
             from fastai.callback.all import SaveModelCallback
-            from fastai.vision.all import (
-                untar_data,
-                ImageDataLoaders,
-                ...
-            )
+            from fastai.vision.all import (untar_data, ImageDataLoaders, ...)
 
             import neptune.new as neptune
             from neptune.new.integrations.fastai import NeptuneCallback
-            from neptune.new.types import File
 
             run = neptune.init_run()
 
             path = untar_data(URLs.MNIST_TINY)
             dls = ImageDataLoaders.from_csv(path)
 
-            # (Neptune) Log a single training phase
-            learn = vision_learner(dls, resnet18, metrics=accuracy)
-            learn.fit_one_cycle(1, cbs=[NeptuneCallback(run=run, base_namespace="experiment_1")])
+            # Log all training phases of the learner
+            learn = cnn_learner(dls, resnet18, cbs=[NeptuneCallback(run=run, base_namespace="experiment_1")])
+            learn.fit_one_cycle(1)
             learn.fit_one_cycle(2)
 
         To log model weight files, add SavemodelCallback() to the callbacks list of your learner or fit method:
@@ -119,9 +114,7 @@ class NeptuneCallback(Callback):
                 ...
                 cbs=[
                     SaveModelCallback(every_epoch=n),
-                    NeptuneCallback(
-                        run=run, base_namespace="experiment_2", upload_saved_models="all"
-                    ),
+                    NeptuneCallback(run=run, base_namespace="experiment_2", upload_saved_models="all"),
                 ],
             )
 
