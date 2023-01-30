@@ -81,7 +81,7 @@ class NeptuneCallback(Callback):
 
     Args:
         run: Neptune `Run` object. A run is a representation of all metadata that you log to Neptune.
-        base_namespace: Root namespace inside which all metdata will be logged.
+        base_namespace: Root namespace inside which all metadata will be logged.
             If omitted, the metadata is logged without a common root namespace.
         upload_saved_models: Which model checkpoints to upload.
             - `"all"` (default): uploads all model checkpoints created by `SaveModelCallback()`.
