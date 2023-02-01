@@ -23,6 +23,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from fastai.basics import (
@@ -134,7 +135,7 @@ class NeptuneCallback(Callback):
 
     def __init__(
         self,
-        run: [neptune.Run | neptune.handler.Handler],
+        run: Union[neptune.Run, neptune.handler.Handler],
         base_namespace: str = "",
         upload_saved_models: Optional[str] = "all",
         **kwargs,
