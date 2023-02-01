@@ -83,7 +83,7 @@ class NeptuneCallback(Callback):
         `neptune.ANONYMOUS_API_TOKEN` and set the `project` argument to "common/fastai-integration".
 
     Args:
-        run: Neptune `Run` or `Handler` object. A run is a representation of all metadata that you log to Neptune.
+        run: Neptune `Run` or namespace `Handler` object. A run is a representation of all metadata that you log to Neptune.
         base_namespace: Root namespace inside which all metadata will be logged.
             If omitted, the metadata is logged without a common root namespace.
         upload_saved_models: Which model checkpoints to upload.
