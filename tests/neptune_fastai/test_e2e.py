@@ -49,7 +49,7 @@ def is_cat(x):
 class TestE2E:
     def test_vision_classification(self):
         # given (Subject)
-        run = neptune.init(name="Integration fastai (vision classification)")
+        run = neptune.init_run(name="Integration fastai (vision classification)")
 
         path = untar_data(URLs.PETS) / "images"
 
@@ -96,7 +96,7 @@ class TestE2E:
 
     def test_tabular_model(self):
         # given (Subject)
-        run = neptune.init(name="Integration fastai (tabular model)")
+        run = neptune.init_run(name="Integration fastai (tabular model)")
 
         path = untar_data(URLs.ADULT_SAMPLE)
 

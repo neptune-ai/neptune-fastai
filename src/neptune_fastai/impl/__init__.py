@@ -46,11 +46,13 @@ try:
         verify_type,
     )
     from neptune.new.types import File
+    from neptune.new.utils import stringify_unsupported
 except ImportError:
     # neptune-client>=1.0.0 package structure
     import neptune  # isort:skip
     from neptune.integrations.utils import expect_not_an_experiment, verify_type  # isort:skip
     from neptune.types import File  # isort:skip
+    from neptune.utils import stringify_unsupported
 
 from neptune_fastai.impl.version import __version__
 
@@ -80,7 +82,7 @@ class NeptuneCallback(Callback):
         `neptune.ANONYMOUS_API_TOKEN` and set the `project` argument to "common/fastai-integration".
 
     Args:
-        run: Neptune `Run` object. A run is a representation of all metadata that you log to Neptune.
+        run: Neptune `Run` or `Handler` object. A run is a representation of all metadata that you log to Neptune.
         base_namespace: Root namespace inside which all metadata will be logged.
             If omitted, the metadata is logged without a common root namespace.
         upload_saved_models: Which model checkpoints to upload.
@@ -132,7 +134,7 @@ class NeptuneCallback(Callback):
 
     def __init__(
         self,
-        run: neptune.Run,
+        run: [neptune.Run | neptune.handler.Handler],
         base_namespace: str = "",
         upload_saved_models: Optional[str] = "all",
         **kwargs,
@@ -140,7 +142,7 @@ class NeptuneCallback(Callback):
         super().__init__(**kwargs)
 
         expect_not_an_experiment(run)
-        verify_type("run", run, neptune.Run)
+        verify_type("run", run, (neptune.Run, neptune.handler.Handler))
         verify_type("base_namespace", base_namespace, str)
         verify_type("upload_saved_models", upload_saved_models, (str, type(None)))
 
@@ -149,7 +151,10 @@ class NeptuneCallback(Callback):
         self.neptune_run = run
         self.fit_index = retrieve_fit_index(run, f"{base_namespace}/metrics/")
 
-        run[INTEGRATION_VERSION_KEY] = __version__
+        root_obj = run
+        if isinstance(root_obj, neptune.handler.Handler):
+            root_obj = run.get_root_object()
+        root_obj[INTEGRATION_VERSION_KEY] = __version__
 
         store_attr("base_namespace,upload_saved_models")
 
@@ -239,7 +244,7 @@ class NeptuneCallback(Callback):
                 "total": len(self._vocab),
             }
 
-        self.neptune_run[f"{self.base_namespace}/config"] = config
+        self.neptune_run[f"{self.base_namespace}/config"] = stringify_unsupported(config)
 
     def after_create(self):
         if not hasattr(self, "save_model") and self.upload_saved_models:
@@ -270,19 +275,19 @@ class NeptuneCallback(Callback):
     def after_batch(self):
         prefix = f"{self.base_namespace}/metrics/fit_{self.fit_index}/{self._target}/batch"
 
-        self.neptune_run[f"{prefix}/loss"].log(value=self.learn.loss.clone())
+        self.neptune_run[f"{prefix}/loss"].append(value=self.learn.loss.clone())
 
         if hasattr(self, "smooth_loss"):
-            self.neptune_run[f"{prefix}/smooth_loss"].log(value=self.learn.smooth_loss.clone())
+            self.neptune_run[f"{prefix}/smooth_loss"].append(value=self.learn.smooth_loss.clone())
 
     def after_train(self):
         prefix = f"{self.base_namespace}/metrics/fit_{self.fit_index}/training/loader"
 
         for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
             if metric_name not in {"epoch", "time"}:
-                self.neptune_run[f"{prefix}/{metric_name}"].log(metric_value)
+                self.neptune_run[f"{prefix}/{metric_name}"].append(metric_value)
 
-        self.neptune_run[f"{prefix}/duration"].log(value=time.time() - self.learn.recorder.start_epoch)
+        self.neptune_run[f"{prefix}/duration"].append(value=time.time() - self.learn.recorder.start_epoch)
 
         _log_optimizer_hyperparams(
             self.neptune_run,
@@ -296,9 +301,9 @@ class NeptuneCallback(Callback):
 
         for metric_name, metric_value in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
             if metric_name not in {"epoch", "time", "train_loss"}:
-                self.neptune_run[f"{prefix}/{metric_name}"].log(metric_value)
+                self.neptune_run[f"{prefix}/{metric_name}"].append(metric_value)
 
-        self.neptune_run[f"{prefix}/duration"].log(value=time.time() - self.learn.recorder.start_epoch)
+        self.neptune_run[f"{prefix}/duration"].append(value=time.time() - self.learn.recorder.start_epoch)
 
     def after_epoch(self):
         if (
@@ -345,16 +350,18 @@ def _log_model_architecture(run: neptune.Run, base_namespace: str, learn: Learne
 def _log_dataset_metadata(run: neptune.Run, base_namespace: str, learn: Learner):
     sha = hashlib.sha1(str(learn.dls.path).encode())
 
-    run[f"{base_namespace}/io_files/resources/dataset"] = {
-        "path": learn.dls.path,
-        "size": learn.dls.n,
-        "sha": sha.hexdigest(),
-    }
+    run[f"{base_namespace}/io_files/resources/dataset"] = stringify_unsupported(
+        {
+            "path": learn.dls.path,
+            "size": learn.dls.n,
+            "sha": sha.hexdigest(),
+        }
+    )
 
 
 def _log_or_assign_metric(run: neptune.Run, number_of_epochs: int, metric: str, value):
     if number_of_epochs > 1:
-        run[metric].log(value)
+        run[metric].append(value)
     else:
         run[metric] = value
 

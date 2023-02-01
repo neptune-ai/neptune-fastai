@@ -35,7 +35,7 @@ except ImportError:
 
 @pytest.fixture()
 def run():
-    exp = neptune.init()
+    exp = neptune.init_run()
     yield exp
     exp.stop()
 

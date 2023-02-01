@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import neptune.new as neptune
 from fastai.basics import (
     URLs,
     accuracy,
@@ -26,13 +27,12 @@ from fastai.tabular.all import (
     TabularDataLoaders,
     tabular_learner,
 )
-from neptune import new as neptune
 
 from neptune_fastai.impl import NeptuneCallback
 
 
 def main():
-    neptune_run = neptune.init()
+    neptune_run = neptune.init_run()
 
     path = untar_data(URLs.ADULT_SAMPLE)
 
