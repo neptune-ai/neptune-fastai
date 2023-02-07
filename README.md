@@ -39,9 +39,9 @@ pip install fastai neptune-client[fastai]
 import neptune.new as neptune
 
 # Start a run
-run = neptune.init(project="common/fastai-integration",
-                   api_token="ANONYMOUS",
-                   source_files=["*.py"])
+run = neptune.init_run(project="common/fastai-integration",
+                       api_token=neptune.ANONYMOUS_API_TOKEN,
+                       source_files=["*.py"])
 
 # Log a single training phase
 learn = learner(...)

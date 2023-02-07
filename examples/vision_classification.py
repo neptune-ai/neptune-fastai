@@ -15,6 +15,7 @@
 #
 from itertools import islice
 
+import neptune.new as neptune
 from fastai.basics import (
     URLs,
     error_rate,
@@ -27,7 +28,6 @@ from fastai.vision.all import (
     get_image_files,
     resnet34,
 )
-from neptune import new as neptune
 
 from neptune_fastai.impl import NeptuneCallback
 
@@ -37,7 +37,7 @@ def is_cat(x):
 
 
 def main():
-    neptune_run = neptune.init()
+    neptune_run = neptune.init_run()
 
     path = untar_data(URLs.PETS) / "images"
 
