@@ -42,6 +42,8 @@ from fastai.torch_core import (
 try:
     # neptune-client=0.9.0+ package structure
     import neptune.new as neptune
+    from neptune.new import Run
+    from neptune.new.handler import Handler
     from neptune.new.integrations.utils import (
         expect_not_an_experiment,
         verify_type,
@@ -51,7 +53,9 @@ try:
 except ImportError:
     # neptune-client>=1.0.0 package structure
     import neptune  # isort:skip
-    from neptune.integrations.utils import expect_not_an_experiment, verify_type  # isort:skip
+    from neptune.integrations.utils import expect_not_an_experiment, verify_type
+    from neptune.handler import Handler
+    from neptune import Run
     from neptune.types import File  # isort:skip
     from neptune.utils import stringify_unsupported
 
@@ -136,7 +140,7 @@ class NeptuneCallback(Callback):
 
     def __init__(
         self,
-        run: Union[neptune.Run, neptune.handler.Handler],
+        run: Union[Run, Handler],
         base_namespace: str = "",
         upload_saved_models: Optional[str] = "all",
         **kwargs,
