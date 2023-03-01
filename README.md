@@ -1,4 +1,4 @@
-# Neptune + Fastai Integration
+# Neptune + fastai integration
 
 Experiment tracking, model registry, data versioning, and live model monitoring for fastai trained models.
 
@@ -10,12 +10,12 @@ Experiment tracking, model registry, data versioning, and live model monitoring 
 
 ## What will be logged to Neptune?
 
-* Hyper-parameters
-* Losses & metrics
-* Training code (Python scripts or Jupyter notebooks) and git information
+* Hyperparameters
+* Losses and metrics
+* Training code (Python scripts or Jupyter notebooks) and Git information
 * Dataset version
-* Model Configuration, architecture, and weights
-* [other metadata](https://docs.neptune.ai/you-should-know/what-can-you-log-and-display)
+* Model configuration, architecture, and weights
+* [Other metadata](https://docs.neptune.ai/you-should-know/what-can-you-log-and-display)
 
 ![image](https://user-images.githubusercontent.com/97611089/160639808-bd381089-66c8-4ed5-a895-0c018b378e0a.png)
 *Example dashboard with train-valid metrics and selected parameters*
@@ -23,25 +23,27 @@ Experiment tracking, model registry, data versioning, and live model monitoring 
 
 ## Resources
 
-* [Documentation](https://docs.neptune.ai/integrations-and-supported-tools/model-training/fastai)
+* [Documentation](https://docs.neptune.ai/integrations/fastai)
 * [Code example on GitHub](https://github.com/neptune-ai/examples/tree/main/integrations-and-supported-tools/fastai/scripts)
 * [Example dashboard in the Neptune app](https://app.neptune.ai/o/common/org/fastai-integration/e/FAS-61/dashboard/fastai-dashboard-1f456716-f509-4432-b8b3-a7f5242703b6)
 * [Run example in Google Colab](https://colab.research.google.com/github/neptune-ai/examples/blob/main/integrations-and-supported-tools/fastai/notebooks/Neptune_fastai.ipynb)
 
 ## Example
 
-```python
-# On the command line:
-pip install fastai neptune-client[fastai]
 ```
+# On the command line:
+pip install fastai neptune[fastai]
+```
+
 ```python
 # In Python:
-import neptune.new as neptune
+import neptune
 
 # Start a run
-run = neptune.init_run(project="common/fastai-integration",
-                       api_token=neptune.ANONYMOUS_API_TOKEN,
-                       source_files=["*.py"])
+run = neptune.init_run(
+    project="common/fastai-integration",
+    api_token=neptune.ANONYMOUS_API_TOKEN,
+)
 
 # Log a single training phase
 learn = learner(...)
