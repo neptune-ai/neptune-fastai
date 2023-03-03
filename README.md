@@ -15,7 +15,7 @@ Experiment tracking, model registry, data versioning, and live model monitoring 
 * Training code (Python scripts or Jupyter notebooks) and Git information
 * Dataset version
 * Model configuration, architecture, and weights
-* [Other metadata](https://docs.neptune.ai/you-should-know/what-can-you-log-and-display)
+* [Other metadata](https://docs.neptune.ai/logging/what_you_can_log)
 
 ![image](https://user-images.githubusercontent.com/97611089/160639808-bd381089-66c8-4ed5-a895-0c018b378e0a.png)
 *Example dashboard with train-valid metrics and selected parameters*
