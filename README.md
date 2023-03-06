@@ -30,13 +30,15 @@ Experiment tracking, model registry, data versioning, and live model monitoring 
 
 ## Example
 
+On the command line:
+
 ```
-# On the command line:
 pip install neptune[fastai]
 ```
 
+In Python:
+
 ```python
-# In Python:
 import neptune
 
 # Start a run
