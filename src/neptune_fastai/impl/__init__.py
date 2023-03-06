@@ -40,6 +40,7 @@ from fastai.torch_core import (
 )
 from neptune.integrations.utils import verify_type
 from neptune.types import File
+from neptune.utils import stringify_unsupported
 
 from neptune_fastai._version import get_versions
 
@@ -268,7 +269,7 @@ class NeptuneCallback(Callback):
                 "total": len(self._vocab),
             }
 
-        self.neptune_run[f"{self.base_namespace}/config"] = config
+        self.neptune_run[f"{self.base_namespace}/config"] = stringify_unsupported(config)
 
     def after_create(self):
         if not hasattr(self, "save_model") and self.upload_saved_models:
@@ -374,11 +375,13 @@ def _log_model_architecture(run: neptune.Run, base_namespace: str, learn: Learne
 def _log_dataset_metadata(run: neptune.Run, base_namespace: str, learn: Learner):
     sha = hashlib.sha1(str(learn.dls.path).encode())
 
-    run[f"{base_namespace}/io_files/resources/dataset"] = {
-        "path": learn.dls.path,
-        "size": learn.dls.n,
-        "sha": sha.hexdigest(),
-    }
+    run[f"{base_namespace}/io_files/resources/dataset"] = stringify_unsupported(
+        {
+            "path": learn.dls.path,
+            "size": learn.dls.n,
+            "sha": sha.hexdigest(),
+        }
+    )
 
 
 def _log_or_assign_metric(run: neptune.Run, number_of_epochs: int, metric: str, value):
