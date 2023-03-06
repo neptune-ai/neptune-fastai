@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import neptune
 import pytest
 from fastai.basics import (
     URLs,
@@ -25,17 +26,10 @@ from fastai.tabular.all import (
     TabularDataLoaders,
 )
 
-try:
-    # neptune-client=0.9.0 package structure
-    from neptune import new as neptune
-except ImportError:
-    # neptune-client=1.0.0 package structure
-    import neptune
-
 
 @pytest.fixture()
 def run():
-    exp = neptune.init()
+    exp = neptune.init_run()
     yield exp
     exp.stop()
 
