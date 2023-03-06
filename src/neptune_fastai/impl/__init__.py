@@ -25,6 +25,7 @@ from typing import (
     Optional,
 )
 
+import neptune
 from fastai.basics import (
     Callback,
     join_path_file,
@@ -37,21 +38,8 @@ from fastai.torch_core import (
     default_device,
     trainable_params,
 )
-
-try:
-    # neptune-client=0.9.0+ package structure
-    import neptune.new as neptune
-    from neptune.new.integrations.utils import (
-        expect_not_an_experiment,
-        verify_type,
-    )
-    from neptune.new.types import File
-except ImportError:
-    # neptune-client>=1.0.0 package structure
-    import neptune  # isort:skip
-    from neptune.integrations.utils import expect_not_an_experiment, verify_type  # isort:skip
-    from neptune.types import File  # isort:skip
-
+from neptune.integrations.utils import verify_type
+from neptune.types import File
 
 from neptune_fastai._version import get_versions
 
@@ -181,7 +169,6 @@ class NeptuneCallback(Callback):
     ):
         super().__init__(**kwargs)
 
-        expect_not_an_experiment(run)
         verify_type("run", run, neptune.Run)
         verify_type("base_namespace", base_namespace, str)
         verify_type("upload_saved_models", upload_saved_models, (str, type(None)))

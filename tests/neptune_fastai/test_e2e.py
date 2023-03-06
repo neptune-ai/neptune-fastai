@@ -15,7 +15,7 @@
 #
 from itertools import islice
 
-import neptune.new as neptune
+import neptune
 from fastai.basics import (
     URLs,
     accuracy,
@@ -37,7 +37,7 @@ from fastai.vision.all import (
     get_image_files,
     squeezenet1_0,
 )
-from neptune.new.integrations.fastai import NeptuneCallback
+from neptune.integrations.fastai import NeptuneCallback
 
 import neptune_fastai
 
@@ -49,7 +49,7 @@ def is_cat(x):
 class TestE2E:
     def test_vision_classification(self):
         # given (Subject)
-        run = neptune.init(name="Integration fastai (vision classification)")
+        run = neptune.init_run(name="Integration fastai (vision classification)")
 
         path = untar_data(URLs.PETS) / "images"
 
@@ -96,7 +96,7 @@ class TestE2E:
 
     def test_tabular_model(self):
         # given (Subject)
-        run = neptune.init(name="Integration fastai (tabular model)")
+        run = neptune.init_run(name="Integration fastai (tabular model)")
 
         path = untar_data(URLs.ADULT_SAMPLE)
 
