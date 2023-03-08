@@ -73,7 +73,7 @@ class NeptuneCallback(Callback):
     Args:
         run: Neptune run object. You can also pass a namespace handler object;
             for example, run["test"], in which case all metadata is logged under
-            the "test" namespace.
+            the "test" namespace inside the run.
         base_namespace: Root namespace inside which all training metadata is logged.
             If omitted, the metadata is logged without a common root namespace.
         upload_saved_models: Which model checkpoints created by `SaveModelCallback()`
