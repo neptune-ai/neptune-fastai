@@ -70,30 +70,14 @@ class NeptuneCallback(Callback):
     The callback logs paramaters, metrics, losses, model configuration,
     optimizer configuration, and info about the dataset: path, number of samples, and hash value.
 
-    Metrics and losses are logged separately for every `learner.fit()` call.
-    For example, when you call `learner.fit(n)` the first time, it will create
-    a folder named fit_0 under the folder metrics that contains optimizer hyperparameters,
-    batch, and loader-level metrics.
-
-        metrics
-            |--> fit_0
-                |--> batch
-                |--> loader
-                |--> optimizer hyperparameters
-            |--> ...
-            |--> fit_n
-
-    Note: To try the integration without registering, you can use the public API token
-        `neptune.ANONYMOUS_API_TOKEN` and set the `project` argument to "common/fastai-integration".
-
     Args:
-        run: Neptune `Run` or namespace `Handler` object. A run is a representation of all metadata
-            that you log to Neptune.
-        base_namespace: Root namespace inside which all metadata will be logged.
+        run: Neptune run object. You can also pass a namespace handler object;
+            for example, run["test"], in which case all metadata is logged under
+            the "test" namespace.
+        base_namespace: Root namespace inside which all training metadata is logged.
             If omitted, the metadata is logged without a common root namespace.
-        upload_saved_models: Which model checkpoints to upload.
-            - `"all"` (default): uploads all model checkpoints created by `SaveModelCallback()`.
-            - `"last"`: uploads the last model checkpoint created by `SaveModelCallback()`.
+        upload_saved_models: Which model checkpoints created by `SaveModelCallback()`
+            to upload: 'all' or 'last'.
 
     Examples:
 
@@ -102,8 +86,8 @@ class NeptuneCallback(Callback):
             from fastai.callback.all import SaveModelCallback
             from fastai.vision.all import (untar_data, ImageDataLoaders, ...)
 
-            import neptune.new as neptune
-            from neptune.new.integrations.fastai import NeptuneCallback
+            import neptune
+            from neptune.integrations.fastai import NeptuneCallback
 
             run = neptune.init_run()
 
@@ -119,10 +103,10 @@ class NeptuneCallback(Callback):
 
             n = 2
             learn = vision_learner(
-                ...
+                ...,
                 cbs=[
                     SaveModelCallback(every_epoch=n),
-                    NeptuneCallback(run=run, base_namespace="experiment_2", upload_saved_models="all"),
+                    NeptuneCallback(run=run, base_namespace="experiment_2"),
                 ],
             )
 
@@ -131,9 +115,6 @@ class NeptuneCallback(Callback):
     For more, see the docs:
         Tutorial: https://docs.neptune.ai/integrations/fastai
         API reference: https://docs.neptune.ai/api/integrations/fastai
-
-    Example scripts:
-        https://github.com/neptune-ai/examples/tree/main/integrations-and-supported-tools/fastai/scripts
     """
 
     order = SaveModelCallback.order + 1
