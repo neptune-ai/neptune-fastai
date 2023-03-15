@@ -1,3 +1,10 @@
+## neptune-fastai 1.1.0
+
+### Changes
+- Updated integration for compatibility with `neptune 1.X`
+- Removed `neptune` and `neptune-client` from base requirements - installation is checked at runtime
+- Functions outside the callback accept `Handler` as well
+
 ## neptune-fastai 1.0.0
 
   ### Changes
