@@ -39,6 +39,8 @@ from fastai.torch_core import (
     trainable_params,
 )
 
+from neptune_fastai.impl.version import __version__
+
 try:
     from neptune import Run
     from neptune.handler import Handler
@@ -49,16 +51,14 @@ try:
     from neptune.types import File
     from neptune.utils import stringify_unsupported
 except ImportError:
-    from neptune.new.metadata_containers import Run
-    from neptune.new.types import File
     from neptune.new.handler import Handler
     from neptune.new.integrations.utils import (
         expect_not_an_experiment,
         verify_type,
     )
+    from neptune.new.metadata_containers import Run
+    from neptune.new.types import File
     from neptune.new.utils import stringify_unsupported
-
-from neptune_fastai.impl.version import __version__
 
 INTEGRATION_VERSION_KEY = "source_code/integrations/neptune-fastai"
 
