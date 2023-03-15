@@ -353,9 +353,9 @@ def _log_or_assign_metric(run: Union[Run, Handler], number_of_epochs: int, metri
 
 
 def retrieve_fit_index(run: Union[Run, Handler], path: str) -> int:
-    if isinstance(run, Run):
-        root = run
-    elif isinstance(run, Handler):
+    root = run
+
+    if isinstance(run, Handler):
         root = run.get_root_object()
 
     return len(root.get_attribute(path) or [])
