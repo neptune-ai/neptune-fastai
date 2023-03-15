@@ -38,19 +38,27 @@ from fastai.torch_core import (
     default_device,
     trainable_params,
 )
-from neptune import Run
-from neptune.handler import Handler
-from neptune.integrations.utils import (
-    expect_not_an_experiment,
-    verify_type,
-)
-from neptune.utils import stringify_unsupported
+
+try:
+    from neptune import Run
+    from neptune.handler import Handler
+    from neptune.integrations.utils import (
+        expect_not_an_experiment,
+        verify_type,
+    )
+    from neptune.types import File
+    from neptune.utils import stringify_unsupported
+except ImportError:
+    from neptune.new.metadata_containers import Run
+    from neptune.new.types import File
+    from neptune.new.handler import Handler
+    from neptune.new.integrations.utils import (
+        expect_not_an_experiment,
+        verify_type,
+    )
+    from neptune.new.utils import stringify_unsupported
 
 from neptune_fastai.impl.version import __version__
-
-import neptune  # isort:skip
-from neptune.types import File  # isort:skip
-
 
 INTEGRATION_VERSION_KEY = "source_code/integrations/neptune-fastai"
 
@@ -139,7 +147,7 @@ class NeptuneCallback(Callback):
         super().__init__(**kwargs)
 
         expect_not_an_experiment(run)
-        verify_type("run", run, (neptune.Run, neptune.handler.Handler))
+        verify_type("run", run, (Run, Handler))
         verify_type("base_namespace", base_namespace, str)
         verify_type("upload_saved_models", upload_saved_models, (str, type(None)))
 
@@ -149,7 +157,7 @@ class NeptuneCallback(Callback):
         self.fit_index = retrieve_fit_index(run, f"{base_namespace}/metrics/")
 
         root_obj = run
-        if isinstance(root_obj, neptune.handler.Handler):
+        if isinstance(root_obj, Handler):
             root_obj = run.get_root_object()
         root_obj[INTEGRATION_VERSION_KEY] = __version__
 
@@ -334,7 +342,7 @@ class NeptuneCallback(Callback):
         self.fit_index += 1
 
 
-def _log_model_architecture(run: neptune.Run, base_namespace: str, learn: Learner):
+def _log_model_architecture(run: Union[Run, Handler], base_namespace: str, learn: Learner):
     if hasattr(learn, "arch"):
         run[f"{base_namespace}/config/model/architecture_name"] = getattr(learn.arch, "__name__", "")
 
@@ -344,7 +352,7 @@ def _log_model_architecture(run: neptune.Run, base_namespace: str, learn: Learne
     run[f"{base_namespace}/io_files/artifacts/model_architecture"].upload(model_architecture)
 
 
-def _log_dataset_metadata(run: neptune.Run, base_namespace: str, learn: Learner):
+def _log_dataset_metadata(run: Union[Run, Handler], base_namespace: str, learn: Learner):
     sha = hashlib.sha1(str(learn.dls.path).encode())
 
     run[f"{base_namespace}/io_files/resources/dataset"] = stringify_unsupported(
@@ -356,17 +364,22 @@ def _log_dataset_metadata(run: neptune.Run, base_namespace: str, learn: Learner)
     )
 
 
-def _log_or_assign_metric(run: neptune.Run, number_of_epochs: int, metric: str, value):
+def _log_or_assign_metric(run: Union[Run, Handler], number_of_epochs: int, metric: str, value):
     if number_of_epochs > 1:
         run[metric].append(value)
     else:
         run[metric] = value
 
 
-def retrieve_fit_index(run: neptune.Run, path: str) -> int:
-    return len(run.get_attribute(path) or [])
+def retrieve_fit_index(run: Union[Run, Handler], path: str) -> int:
+    if isinstance(run, Run):
+        root = run
+    elif isinstance(run, Handler):
+        root = run.get_root_object()
+
+    return len(root.get_attribute(path) or [])
 
 
-def _log_optimizer_hyperparams(run: neptune.Run, prefix: str, optimizer_hyperparams: dict, n_epoch: int):
+def _log_optimizer_hyperparams(run: Union[Run, Handler], prefix: str, optimizer_hyperparams: dict, n_epoch: int):
     for param, value in optimizer_hyperparams.items():
         _log_or_assign_metric(run, n_epoch, f"{prefix}/{param}", value)
