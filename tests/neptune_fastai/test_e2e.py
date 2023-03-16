@@ -52,7 +52,7 @@ def is_cat(x):
 
 
 class TestE2E:
-    def test_vision_classification(self):
+    def test_vision_classification_with_handler(self):
         # given (Subject)
         run = init_run(name="Integration fastai (vision classification)")["test"]
         root_obj = run.get_root_object()
