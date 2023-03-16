@@ -15,7 +15,6 @@
 #
 from itertools import islice
 
-import neptune.new as neptune
 from fastai.basics import (
     URLs,
     accuracy,
@@ -37,7 +36,13 @@ from fastai.vision.all import (
     get_image_files,
     squeezenet1_0,
 )
-from neptune.new.integrations.fastai import NeptuneCallback
+
+try:
+    from neptune import init_run
+    from neptune.integrations.fastai import NeptuneCallback
+except ImportError:
+    from neptune.new import init_run
+    from neptune.new.integrations.fastai import NeptuneCallback
 
 import neptune_fastai
 
@@ -47,9 +52,10 @@ def is_cat(x):
 
 
 class TestE2E:
-    def test_vision_classification(self):
+    def test_vision_classification_with_handler(self):
         # given (Subject)
-        run = neptune.init_run(name="Integration fastai (vision classification)")
+        run = init_run(name="Integration fastai (vision classification)")["test"]
+        root_obj = run.get_root_object()
 
         path = untar_data(URLs.PETS) / "images"
 
@@ -71,11 +77,11 @@ class TestE2E:
         )
 
         learn.fit(1)
-        run.sync()
+        root_obj.sync()
 
         # then
         # correct integration version is logged
-        logged_version = run["source_code/integrations/neptune-fastai"].fetch()
+        logged_version = root_obj["source_code/integrations/neptune-fastai"].fetch()
         assert logged_version == neptune_fastai.__version__
 
         # and
@@ -96,7 +102,7 @@ class TestE2E:
 
     def test_tabular_model(self):
         # given (Subject)
-        run = neptune.init_run(name="Integration fastai (tabular model)")
+        run = init_run(name="Integration fastai (tabular model)")
 
         path = untar_data(URLs.ADULT_SAMPLE)
 

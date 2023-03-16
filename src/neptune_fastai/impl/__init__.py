@@ -39,9 +39,18 @@ from fastai.torch_core import (
     trainable_params,
 )
 
+from neptune_fastai.impl.version import __version__
+
 try:
-    # neptune-client=0.9.0+ package structure
-    import neptune.new as neptune
+    from neptune import Run
+    from neptune.handler import Handler
+    from neptune.integrations.utils import (
+        expect_not_an_experiment,
+        verify_type,
+    )
+    from neptune.types import File
+    from neptune.utils import stringify_unsupported
+except ImportError:
     from neptune.new import Run
     from neptune.new.handler import Handler
     from neptune.new.integrations.utils import (
@@ -50,16 +59,6 @@ try:
     )
     from neptune.new.types import File
     from neptune.new.utils import stringify_unsupported
-except ImportError:
-    # neptune-client>=1.0.0 package structure
-    import neptune  # isort:skip
-    from neptune.integrations.utils import expect_not_an_experiment, verify_type
-    from neptune.handler import Handler
-    from neptune import Run
-    from neptune.types import File  # isort:skip
-    from neptune.utils import stringify_unsupported
-
-from neptune_fastai.impl.version import __version__
 
 INTEGRATION_VERSION_KEY = "source_code/integrations/neptune-fastai"
 
@@ -70,30 +69,14 @@ class NeptuneCallback(Callback):
     The callback logs paramaters, metrics, losses, model configuration,
     optimizer configuration, and info about the dataset: path, number of samples, and hash value.
 
-    Metrics and losses are logged separately for every `learner.fit()` call.
-    For example, when you call `learner.fit(n)` the first time, it will create
-    a folder named fit_0 under the folder metrics that contains optimizer hyperparameters,
-    batch, and loader-level metrics.
-
-        metrics
-            |--> fit_0
-                |--> batch
-                |--> loader
-                |--> optimizer hyperparameters
-            |--> ...
-            |--> fit_n
-
-    Note: To try the integration without registering, you can use the public API token
-        `neptune.ANONYMOUS_API_TOKEN` and set the `project` argument to "common/fastai-integration".
-
     Args:
-        run: Neptune `Run` or namespace `Handler` object. A run is a representation of all metadata
-            that you log to Neptune.
-        base_namespace: Root namespace inside which all metadata will be logged.
+        run: Neptune run object. You can also pass a namespace handler object;
+            for example, run["test"], in which case all metadata is logged under
+            the "test" namespace inside the run.
+        base_namespace: Root namespace where all metadata logged by the callback is stored.
             If omitted, the metadata is logged without a common root namespace.
-        upload_saved_models: Which model checkpoints to upload.
-            - `"all"` (default): uploads all model checkpoints created by `SaveModelCallback()`.
-            - `"last"`: uploads the last model checkpoint created by `SaveModelCallback()`.
+        upload_saved_models: Which model checkpoints created by `SaveModelCallback()`
+            to upload: 'all' or 'last'.
 
     Examples:
 
@@ -102,8 +85,8 @@ class NeptuneCallback(Callback):
             from fastai.callback.all import SaveModelCallback
             from fastai.vision.all import (untar_data, ImageDataLoaders, ...)
 
-            import neptune.new as neptune
-            from neptune.new.integrations.fastai import NeptuneCallback
+            import neptune
+            from neptune.integrations.fastai import NeptuneCallback
 
             run = neptune.init_run()
 
@@ -119,10 +102,10 @@ class NeptuneCallback(Callback):
 
             n = 2
             learn = vision_learner(
-                ...
+                ...,
                 cbs=[
                     SaveModelCallback(every_epoch=n),
-                    NeptuneCallback(run=run, base_namespace="experiment_2", upload_saved_models="all"),
+                    NeptuneCallback(run=run, base_namespace="experiment_2"),
                 ],
             )
 
@@ -131,9 +114,6 @@ class NeptuneCallback(Callback):
     For more, see the docs:
         Tutorial: https://docs.neptune.ai/integrations/fastai
         API reference: https://docs.neptune.ai/api/integrations/fastai
-
-    Example scripts:
-        https://github.com/neptune-ai/examples/tree/main/integrations-and-supported-tools/fastai/scripts
     """
 
     order = SaveModelCallback.order + 1
@@ -148,7 +128,7 @@ class NeptuneCallback(Callback):
         super().__init__(**kwargs)
 
         expect_not_an_experiment(run)
-        verify_type("run", run, (neptune.Run, neptune.handler.Handler))
+        verify_type("run", run, (Run, Handler))
         verify_type("base_namespace", base_namespace, str)
         verify_type("upload_saved_models", upload_saved_models, (str, type(None)))
 
@@ -158,7 +138,7 @@ class NeptuneCallback(Callback):
         self.fit_index = retrieve_fit_index(run, f"{base_namespace}/metrics/")
 
         root_obj = run
-        if isinstance(root_obj, neptune.handler.Handler):
+        if isinstance(root_obj, Handler):
             root_obj = run.get_root_object()
         root_obj[INTEGRATION_VERSION_KEY] = __version__
 
@@ -343,7 +323,7 @@ class NeptuneCallback(Callback):
         self.fit_index += 1
 
 
-def _log_model_architecture(run: neptune.Run, base_namespace: str, learn: Learner):
+def _log_model_architecture(run: Union[Run, Handler], base_namespace: str, learn: Learner):
     if hasattr(learn, "arch"):
         run[f"{base_namespace}/config/model/architecture_name"] = getattr(learn.arch, "__name__", "")
 
@@ -353,7 +333,7 @@ def _log_model_architecture(run: neptune.Run, base_namespace: str, learn: Learne
     run[f"{base_namespace}/io_files/artifacts/model_architecture"].upload(model_architecture)
 
 
-def _log_dataset_metadata(run: neptune.Run, base_namespace: str, learn: Learner):
+def _log_dataset_metadata(run: Union[Run, Handler], base_namespace: str, learn: Learner):
     sha = hashlib.sha1(str(learn.dls.path).encode())
 
     run[f"{base_namespace}/io_files/resources/dataset"] = stringify_unsupported(
@@ -365,17 +345,22 @@ def _log_dataset_metadata(run: neptune.Run, base_namespace: str, learn: Learner)
     )
 
 
-def _log_or_assign_metric(run: neptune.Run, number_of_epochs: int, metric: str, value):
+def _log_or_assign_metric(run: Union[Run, Handler], number_of_epochs: int, metric: str, value):
     if number_of_epochs > 1:
         run[metric].append(value)
     else:
         run[metric] = value
 
 
-def retrieve_fit_index(run: neptune.Run, path: str) -> int:
-    return len(run.get_attribute(path) or [])
+def retrieve_fit_index(run: Union[Run, Handler], path: str) -> int:
+    root = run
+
+    if isinstance(run, Handler):
+        root = run.get_root_object()
+
+    return len(root.get_attribute(path) or [])
 
 
-def _log_optimizer_hyperparams(run: neptune.Run, prefix: str, optimizer_hyperparams: dict, n_epoch: int):
+def _log_optimizer_hyperparams(run: Union[Run, Handler], prefix: str, optimizer_hyperparams: dict, n_epoch: int):
     for param, value in optimizer_hyperparams.items():
         _log_or_assign_metric(run, n_epoch, f"{prefix}/{param}", value)
