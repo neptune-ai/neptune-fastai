@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 from itertools import islice
+from pathlib import Path
 
 from fastai.basics import (
     URLs,
@@ -92,8 +93,7 @@ class TestE2E:
 
         # and
         dateset = run["experiment/io_files/resources/dataset"].fetch()
-        print(dateset["path"])
-        assert dateset["path"].endswith(".fastai/data/oxford-iiit-pet/images")
+        assert dateset["path"].endswith(str(Path(".fastai/data/oxford-iiit-pet/images")))
         assert dateset["size"] == 103
 
         # and
@@ -147,7 +147,7 @@ class TestE2E:
 
         # and
         dateset = run["experiment/io_files/resources/dataset"].fetch()
-        assert dateset["path"].endswith(".fastai/data/adult_sample")
+        assert dateset["path"].endswith(str(Path(".fastai/data/adult_sample")))
         assert dateset["size"] == 26049
 
         # and
