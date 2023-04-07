@@ -92,6 +92,7 @@ class TestE2E:
 
         # and
         dateset = run["experiment/io_files/resources/dataset"].fetch()
+        print(dateset["path"])
         assert dateset["path"].endswith(".fastai/data/oxford-iiit-pet/images")
         assert dateset["size"] == 103
 
