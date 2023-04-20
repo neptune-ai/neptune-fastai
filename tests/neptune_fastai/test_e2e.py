@@ -16,6 +16,7 @@
 from itertools import islice
 from pathlib import Path
 
+import torch
 from fastai.basics import (
     URLs,
     accuracy,
@@ -67,6 +68,7 @@ class TestE2E:
             seed=42,
             label_func=is_cat,
             item_tfms=Resize(224),
+            device=torch.device("cpu"),
         )
 
         learn = cnn_learner(
@@ -121,6 +123,7 @@ class TestE2E:
             ],
             cont_names=["age", "fnlwgt", "education-num"],
             procs=[Categorify, FillMissing, Normalize],
+            device=torch.device("cpu"),
         )
 
         learn = tabular_learner(dls, metrics=accuracy)
