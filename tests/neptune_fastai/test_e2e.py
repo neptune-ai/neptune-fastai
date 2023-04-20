@@ -14,7 +14,9 @@
 # limitations under the License.
 #
 from itertools import islice
+from pathlib import Path
 
+import torch
 from fastai.basics import (
     URLs,
     accuracy,
@@ -66,6 +68,7 @@ class TestE2E:
             seed=42,
             label_func=is_cat,
             item_tfms=Resize(224),
+            device=torch.device("cpu"),
         )
 
         learn = cnn_learner(
@@ -92,7 +95,7 @@ class TestE2E:
 
         # and
         dateset = run["experiment/io_files/resources/dataset"].fetch()
-        assert dateset["path"].endswith(".fastai/data/oxford-iiit-pet/images")
+        assert dateset["path"].endswith(str(Path(".fastai/data/oxford-iiit-pet/images")))
         assert dateset["size"] == 103
 
         # and
@@ -120,6 +123,7 @@ class TestE2E:
             ],
             cont_names=["age", "fnlwgt", "education-num"],
             procs=[Categorify, FillMissing, Normalize],
+            device=torch.device("cpu"),
         )
 
         learn = tabular_learner(dls, metrics=accuracy)
@@ -146,7 +150,7 @@ class TestE2E:
 
         # and
         dateset = run["experiment/io_files/resources/dataset"].fetch()
-        assert dateset["path"].endswith(".fastai/data/adult_sample")
+        assert dateset["path"].endswith(str(Path(".fastai/data/adult_sample")))
         assert dateset["size"] == 26049
 
         # and
