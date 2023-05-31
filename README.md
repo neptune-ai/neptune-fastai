@@ -25,7 +25,7 @@ Experiment tracking, model registry, data versioning, and live model monitoring 
 
 * [Documentation](https://docs.neptune.ai/integrations/fastai)
 * [Code example on GitHub](https://github.com/neptune-ai/examples/tree/main/integrations-and-supported-tools/fastai/scripts)
-* [Example dashboard in the Neptune app](https://app.neptune.ai/o/common/org/fastai-integration/e/FAS-61/dashboard/fastai-dashboard-1f456716-f509-4432-b8b3-a7f5242703b6)
+* [Example dashboard in the Neptune app](https://app.neptune.ai/o/common/org/fastai-integration/runs/details?viewId=standard-view&detailsTab=dashboard&dashboardId=fastai-dashboard-1f456716-f509-4432-b8b3-a7f5242703b6&shortId=FAS-1895&type=run)
 * [Run example in Google Colab](https://colab.research.google.com/github/neptune-ai/examples/blob/main/integrations-and-supported-tools/fastai/notebooks/Neptune_fastai.ipynb)
 
 ## Example
@@ -33,7 +33,7 @@ Experiment tracking, model registry, data versioning, and live model monitoring 
 On the command line:
 
 ```
-pip install neptune[fastai]
+pip install neptune-fastai
 ```
 
 In Python:
