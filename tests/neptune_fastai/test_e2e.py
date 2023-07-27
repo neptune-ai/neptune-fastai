@@ -96,7 +96,7 @@ class TestE2E:
         exp_config = run["experiment/config"].fetch()
         assert exp_config["batch_size"] == 64
         assert exp_config["criterion"] == "CrossEntropyLoss()"
-        assert exp_config["optimizer"]["name"] == "NA"
+        assert exp_config["optimizer"]["name"] == "N/A"
         assert exp_config["input_shape"] == {"x": "[3, 224, 224]", "y": 1}
 
         # and
