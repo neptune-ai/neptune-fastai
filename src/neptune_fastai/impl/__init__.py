@@ -154,7 +154,9 @@ class NeptuneCallback(Callback):
 
     @property
     def _optimizer_name(self) -> Optional[str]:
-        return self.opt_func.__name__
+        optim_name = getattr(self.opt_func, "__name__", "NA")
+        warnings.warn("NeptuneCallback: Couldn't retrieve the optimizer name, so it will not be logged.")
+        return optim_name
 
     @property
     def _device(self) -> str:
