@@ -1,3 +1,8 @@
+## neptune-fastai 1.1.1
+
+### Fixes
+- Don't error if `optim.__name__` is not present. (https://github.com/neptune-ai/neptune-fastai/pull/54)
+
 ## neptune-fastai 1.1.0
 
 ### Changes

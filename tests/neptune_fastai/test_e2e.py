@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from functools import partial
 from itertools import islice
 from pathlib import Path
 
@@ -24,6 +25,7 @@ from fastai.basics import (
     untar_data,
 )
 from fastai.callback.all import SaveModelCallback
+from fastai.optimizer import Adam
 from fastai.tabular.all import (
     Categorify,
     FillMissing,
@@ -71,12 +73,15 @@ class TestE2E:
             device=torch.device("cpu"),
         )
 
+        opt_func = partial(Adam, lr=3e-3, wd=0.01)
+
         learn = cnn_learner(
             dls,
             squeezenet1_0,
             metrics=error_rate,
             cbs=[NeptuneCallback(run, "experiment")],
             pretrained=False,
+            opt_func=opt_func,
         )
 
         learn.fit(1)
@@ -91,6 +96,7 @@ class TestE2E:
         exp_config = run["experiment/config"].fetch()
         assert exp_config["batch_size"] == 64
         assert exp_config["criterion"] == "CrossEntropyLoss()"
+        assert exp_config["optimizer"]["name"] == "N/A"
         assert exp_config["input_shape"] == {"x": "[3, 224, 224]", "y": 1}
 
         # and
