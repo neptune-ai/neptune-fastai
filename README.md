@@ -1,6 +1,6 @@
 # Neptune + fastai integration
 
-Experiment tracking for fastai trained models.
+Experiment tracking for fastai-trained models.
 
 ## What will you get with this integration?
 
